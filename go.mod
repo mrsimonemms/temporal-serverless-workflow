@@ -3,6 +3,7 @@ module github.com/mrsimonemms/temporal-serverless-workflow
 go 1.24.2
 
 require (
+	github.com/mrsimonemms/golang-helpers v0.3.0
 	github.com/rs/zerolog v1.34.0
 	github.com/serverlessworkflow/sdk-go/v3 v3.1.0
 	github.com/spf13/cobra v1.9.1
@@ -35,6 +36,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/robfig/cron v1.2.0 // indirect
 	github.com/sagikazarmark/locafero v0.10.0 // indirect
+	github.com/samber/lo v1.51.0 // indirect
+	github.com/samber/slog-common v0.19.0 // indirect
+	github.com/samber/slog-zerolog/v2 v2.7.3 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.9.2 // indirect

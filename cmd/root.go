@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mrsimonemms/golang-helpers/temporal"
 	"github.com/mrsimonemms/temporal-serverless-workflow/pkg/workflow"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -31,6 +32,7 @@ import (
 var rootOpts struct {
 	FilePath          string
 	LogLevel          string
+	TaskQueue         string
 	TemporalAddress   string
 	TemporalNamespace string
 }
@@ -54,6 +56,7 @@ var rootCmd = &cobra.Command{
 		c, err := client.Dial(client.Options{
 			HostPort:  rootOpts.TemporalAddress,
 			Namespace: rootOpts.TemporalNamespace,
+			Logger:    temporal.NewZerologHandler(&log.Logger),
 		})
 		if err != nil {
 			log.Fatal().Err(err).Msg("Unable to create client")
@@ -66,7 +69,7 @@ var rootCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("Error loading workflow")
 		}
 
-		w := worker.New(c, "payments", worker.Options{})
+		w := worker.New(c, rootOpts.TaskQueue, worker.Options{})
 
 		fmt.Printf("%+v\n", wf)
 
@@ -105,6 +108,15 @@ func init() {
 		"l",
 		viper.GetString("log_level"),
 		fmt.Sprintf("log level: %s", "Set log level"),
+	)
+
+	viper.SetDefault("task_queue", "serverless-workflow")
+	rootCmd.Flags().StringVarP(
+		&rootOpts.TaskQueue,
+		"task-queue",
+		"q",
+		viper.GetString("task_queue"),
+		"Task queue name",
 	)
 
 	viper.SetDefault("temporal_address", client.DefaultHostPort)

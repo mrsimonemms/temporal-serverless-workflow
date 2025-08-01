@@ -85,6 +85,8 @@ github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/
 github.com/mattn/go-isatty v0.0.19/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
+github.com/mrsimonemms/golang-helpers v0.3.0 h1:QFRpv+JhpwubGbPOrY37M17PfGghwGH37WG0seoB5Ws=
+github.com/mrsimonemms/golang-helpers v0.3.0/go.mod h1:FdHlX4yYmPStMhISoAnObvUrFHawEFElg1EdSXJwZ+A=
 github.com/nexus-rpc/sdk-go v0.4.0 h1:A/IjWWAiWecnYnt7uI0Cw6ci6zJwaM9Ma3q4hDDxUVc=
 github.com/nexus-rpc/sdk-go v0.4.0/go.mod h1:TpfkM2Cw0Rlk9drGkoiSMpFqflKTiQLWUNyKJjF8mKQ=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
@@ -106,6 +108,12 @@ github.com/rs/zerolog v1.34.0/go.mod h1:bJsvje4Z08ROH4Nhs5iH600c3IkWhwp44iRc54W6
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sagikazarmark/locafero v0.10.0 h1:FM8Cv6j2KqIhM2ZK7HZjm4mpj9NBktLgowT1aN9q5Cc=
 github.com/sagikazarmark/locafero v0.10.0/go.mod h1:Ieo3EUsjifvQu4NZwV5sPd4dwvu0OCgEQV7vjc9yDjw=
+github.com/samber/lo v1.51.0 h1:kysRYLbHy/MB7kQZf5DSN50JHmMsNEdeY24VzJFu7wI=
+github.com/samber/lo v1.51.0/go.mod h1:4+MXEGsJzbKGaUEQFKBq2xtfuznW9oz/WrgyzMzRoM0=
+github.com/samber/slog-common v0.19.0 h1:fNcZb8B2uOLooeYwFpAlKjkQTUafdjfqKcwcC89G9YI=
+github.com/samber/slog-common v0.19.0/go.mod h1:dTz+YOU76aH007YUU0DffsXNsGFQRQllPQh9XyNoA3M=
+github.com/samber/slog-zerolog/v2 v2.7.3 h1:/MkPDl/tJhijN2GvB1MWwBn2FU8RiL3rQ8gpXkQm2EY=
+github.com/samber/slog-zerolog/v2 v2.7.3/go.mod h1:oWU7WHof4Xp8VguiNO02r1a4VzkgoOyOZhY5CuRke60=
 github.com/serverlessworkflow/sdk-go/v3 v3.1.0 h1:gVXfBjivaNAUY1MLCLvjUz1NTvVytejiG0/IRgArUE0=
 github.com/serverlessworkflow/sdk-go/v3 v3.1.0/go.mod h1:UlZxTJUm55R3qFTieYybPtKLKFrtpGRJUL8JZS0PIuU=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
