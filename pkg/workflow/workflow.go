@@ -16,37 +16,11 @@
 
 package workflow
 
-import (
-	"fmt"
-	"os"
-	"path/filepath"
+import "go.temporal.io/sdk/workflow"
 
-	"github.com/serverlessworkflow/sdk-go/v3/model"
-	"github.com/serverlessworkflow/sdk-go/v3/parser"
-)
+func (w *Workflow) ToTemporalWorkflow(ctx workflow.Context) (any, error) {
+	logger := workflow.GetLogger(ctx)
+	logger.Info("Running workflow")
 
-type Workflow struct {
-	data []byte
-	wf   *model.Workflow
-}
-
-func (w *Workflow) WorkflowName() string {
-	return w.wf.Document.Name
-}
-
-func LoadFromFile(file string) (*Workflow, error) {
-	data, err := os.ReadFile(filepath.Clean(file))
-	if err != nil {
-		return nil, fmt.Errorf("error loading file: %w", err)
-	}
-
-	wf, err := parser.FromYAMLSource(data)
-	if err != nil {
-		return nil, fmt.Errorf("error loading yaml: %w", err)
-	}
-
-	return &Workflow{
-		data: data,
-		wf:   wf,
-	}, nil
+	return "hello", nil
 }

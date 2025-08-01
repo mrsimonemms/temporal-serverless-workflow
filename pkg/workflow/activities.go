@@ -16,37 +16,18 @@
 
 package workflow
 
-import (
-	"fmt"
-	"os"
-	"path/filepath"
+import "context"
 
-	"github.com/serverlessworkflow/sdk-go/v3/model"
-	"github.com/serverlessworkflow/sdk-go/v3/parser"
-)
-
-type Workflow struct {
-	data []byte
-	wf   *model.Workflow
+type activities struct {
+	workflow *Workflow
 }
 
-func (w *Workflow) WorkflowName() string {
-	return w.wf.Document.Name
+func (a *activities) Test(ctx context.Context) (string, error) {
+	return "twat", nil
 }
 
-func LoadFromFile(file string) (*Workflow, error) {
-	data, err := os.ReadFile(filepath.Clean(file))
-	if err != nil {
-		return nil, fmt.Errorf("error loading file: %w", err)
+func (w *Workflow) ToActivities() *activities {
+	return &activities{
+		workflow: w,
 	}
-
-	wf, err := parser.FromYAMLSource(data)
-	if err != nil {
-		return nil, fmt.Errorf("error loading yaml: %w", err)
-	}
-
-	return &Workflow{
-		data: data,
-		wf:   wf,
-	}, nil
 }

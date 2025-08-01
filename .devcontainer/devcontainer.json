@@ -13,7 +13,8 @@
     }
   },
   "postCreateCommand": {
-    "bootstrap": "ln -s $PWD/.cobra.yaml $HOME/.cobra.yaml && if [ ! -f \"go.mod\" ]; then go mod init \"github.com/mrsimonemms/temporal-serverless-workflow\"; fi && if [ ! -f \"main.go\" ]; then cobra-cli init && go mod tidy; fi"
+    "bootstrap": "ln -s $PWD/.cobra.yaml $HOME/.cobra.yaml && if [ ! -f \"go.mod\" ]; then go mod init \"github.com/mrsimonemms/temporal-serverless-workflow\"; fi && if [ ! -f \"main.go\" ]; then cobra-cli init && go mod tidy; fi",
+    "install-air": "go install github.com/air-verse/air@latest"
   },
   "containerEnv": {
     "GIT_REPO": "github.com/mrsimonemms/temporal-serverless-workflow",

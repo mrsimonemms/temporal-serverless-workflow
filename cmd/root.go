@@ -20,13 +20,14 @@ import (
 	"os"
 
 	"github.com/mrsimonemms/golang-helpers/temporal"
-	"github.com/mrsimonemms/temporal-serverless-workflow/pkg/workflow"
+	tsw "github.com/mrsimonemms/temporal-serverless-workflow/pkg/workflow"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
+	"go.temporal.io/sdk/workflow"
 )
 
 var rootOpts struct {
@@ -64,14 +65,17 @@ var rootCmd = &cobra.Command{
 		defer c.Close()
 
 		// Load the workflow file
-		wf, err := workflow.LoadFromFile(rootOpts.FilePath)
+		wf, err := tsw.LoadFromFile(rootOpts.FilePath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error loading workflow")
 		}
 
 		w := worker.New(c, rootOpts.TaskQueue, worker.Options{})
 
-		fmt.Printf("%+v\n", wf)
+		w.RegisterWorkflowWithOptions(wf.ToTemporalWorkflow, workflow.RegisterOptions{
+			Name: wf.WorkflowName(),
+		})
+		w.RegisterActivity(wf.ToActivities())
 
 		err = w.Run(worker.InterruptCh())
 		if err != nil {
