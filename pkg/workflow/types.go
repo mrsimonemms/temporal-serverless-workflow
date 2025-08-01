@@ -30,6 +30,17 @@ type Workflow struct {
 	wf   *model.Workflow
 }
 
+type OutputType struct {
+	Type ResultType
+	Data any
+}
+
+type Output map[string]OutputType
+
+type Variables struct {
+	Data map[string]any
+}
+
 func (w *Workflow) WorkflowName() string {
 	return w.wf.Document.Name
 }

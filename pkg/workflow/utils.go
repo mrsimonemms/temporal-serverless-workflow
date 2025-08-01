@@ -16,12 +16,22 @@
 
 package workflow
 
-type activities struct {
-	workflow *Workflow
-}
+import (
+	"time"
 
-func (w *Workflow) ToActivities() *activities {
-	return &activities{
-		workflow: w,
-	}
+	"github.com/serverlessworkflow/sdk-go/v3/model"
+)
+
+// Converts the SW duration to a time Duration
+func ToDuration(v *model.Duration) time.Duration {
+	inline := v.AsInline()
+
+	var duration time.Duration
+	duration += time.Millisecond * time.Duration(inline.Milliseconds)
+	duration += time.Second * time.Duration(inline.Seconds)
+	duration += time.Minute * time.Duration(inline.Minutes)
+	duration += time.Hour * time.Duration(inline.Hours)
+	duration += (time.Hour * 24) * time.Duration(inline.Days)
+
+	return duration
 }

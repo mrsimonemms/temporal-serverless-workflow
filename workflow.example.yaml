@@ -13,12 +13,12 @@ timeout:
 do:
   - step1:
       set:
-        petId: 12345
-  - wait30Seconds:
+        userId: 2
+  - wait:
       wait:
-        seconds: 30
-  - getPet:
+        seconds: 5
+  - getUser:
       call: http
       with:
         method: get
-        endpoint: https://petstore.swagger.io/v2/pet/{petId}
+        endpoint: https://jsonplaceholder.typicode.com/users/{userId}

@@ -16,12 +16,8 @@
 
 package workflow
 
-type activities struct {
-	workflow *Workflow
-}
+type ResultType string
 
-func (w *Workflow) ToActivities() *activities {
-	return &activities{
-		workflow: w,
-	}
-}
+const (
+	CallHTTPResultType ResultType = "CallHTTP"
+)
