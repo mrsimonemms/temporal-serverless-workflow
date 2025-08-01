@@ -1,0 +1,150 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: write
+  packages: write
+  pull-requests: read
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # fetch-depth is required
+
+      - uses: wagoid/commitlint-github-action@v6
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for pre-commit to be able scan history
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: go install ./...
+
+      - name: go-vet
+        run: go vet -v ./...
+
+      - name: go-test
+        run: go test -v ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+
+      - uses: pre-commit/action@v3.0.1
+
+  build:
+    runs-on: ubuntu-latest
+    needs:
+      - commitlint
+      - test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for goreleaser changelog to work correctly
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get branch names
+        id: branch-name
+        uses: tj-actions/branch-names@v8
+        with:
+          strip_tag_prefix: v
+
+      - name: Generate Docker tag
+        id: docker
+        run: |
+          if [ "${{ steps.branch-name.outputs.is_tag }}" = "true"  ];
+          then
+            # Latest tag
+            IMG_NAME="ghcr.io/${GITHUB_REPOSITORY,,}:latest"
+            # Tag name (usually vX.Y.Z)
+            IMG_NAME="${IMG_NAME},ghcr.io/${GITHUB_REPOSITORY,,}:${{ steps.branch-name.outputs.tag }}"
+
+            echo "image_name=${IMG_NAME}" >> "$GITHUB_OUTPUT"
+            echo "platforms=linux/amd64,linux/arm64,linux/arm/v7" >> "$GITHUB_OUTPUT"
+            echo "push=true" >> "$GITHUB_OUTPUT"
+          else
+            # Use branch naming convention
+            TAG="branch-${{ steps.branch-name.outputs.current_branch }}"
+            # Change "/" for "-"
+            TAG="${TAG//\//-}"
+            # Set to lowercase
+            TAG="${TAG,,}"
+
+            echo "image_name=ghcr.io/${GITHUB_REPOSITORY,,}:${TAG}" >> "$GITHUB_OUTPUT"
+            echo "platforms=linux/amd64" >> "$GITHUB_OUTPUT"
+            echo "push=${{ github.ref == 'refs/heads/main' }}" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ "${{ steps.branch-name.outputs.is_tag }}" = "true"  ];
+          then
+            echo "version=${{ steps.branch-name.outputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=development" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "container_tagged_image=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "commit_id=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "gitRepo=github.com/${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          build-args: |
+            GIT_COMMIT=${{ steps.docker.outputs.commit_id }}
+            GIT_REPO=${{ steps.docker.outputs.gitRepo }}
+            VERSION=${{ steps.docker.outputs.version }}
+          platforms: ${{ steps.docker.outputs.platforms }}
+          push: ${{ steps.docker.outputs.push }}
+          tags: ${{ steps.docker.outputs.image_name }},${{ steps.docker.outputs.container_tagged_image }}
+
+      - name: Set up Go
+        if: steps.branch-name.outputs.is_tag == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.20.0'
+
+      - name: Run GoReleaser
+        if: steps.branch-name.outputs.is_tag == 'true'
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GIT_REPO: ${{ steps.docker.outputs.gitRepo }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

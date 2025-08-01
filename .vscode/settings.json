@@ -1,0 +1,15 @@
+{
+  "editor.formatOnSave": true,
+  "editor.rulers": [
+    80
+  ],
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": [
+      ".github/workflows/*.{yml,yaml}"
+    ]
+  },
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": [
+    "--fast"
+  ]
+}

@@ -1,0 +1,10 @@
+dist
+tmp
+
+node_modules
+
+.idea
+.DS_Store
+Thumbs.db
+.envrc
+go.work.sum

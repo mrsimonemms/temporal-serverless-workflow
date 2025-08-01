@@ -1,0 +1,20 @@
+{
+  "template": "https://github.com/mrsimonemms/new",
+  "commit": "31026d30d7422cb70b7dc482b946e292a6e12434",
+  "checkout": "main",
+  "context": {
+    "cookiecutter": {
+      "project_name": "temporal-serverless-workflow",
+      "description": "Build Temporal workflows with Serverless Workflow",
+      "author": "Simon Emms <simon@simonemms.com>",
+      "repo": "github.com/mrsimonemms/temporal-serverless-workflow",
+      "use_viper": false,
+      "_template": "https://github.com/mrsimonemms/new",
+      "_commit": "31026d30d7422cb70b7dc482b946e292a6e12434"
+    }
+  },
+  "directory": "golang-cobra",
+  "skip": [
+    ".git"
+  ]
+}
