@@ -14,6 +14,9 @@ do:
   - step1:
       set:
         petId: 12345
+  - wait30Seconds:
+      wait:
+        seconds: 30
   - getPet:
       call: http
       with:

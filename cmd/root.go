@@ -18,17 +18,21 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
+	"github.com/mrsimonemms/temporal-serverless-workflow/pkg/workflow"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 )
 
 var rootOpts struct {
-	FilePath string
-	LogLevel string
+	FilePath          string
+	LogLevel          string
+	TemporalAddress   string
+	TemporalNamespace string
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -46,13 +50,30 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		// Load the workflow file
-		data, err := os.ReadFile(filepath.Clean(rootOpts.FilePath))
+		// The client and worker are heavyweight objects that should be created once per process.
+		c, err := client.Dial(client.Options{
+			HostPort:  rootOpts.TemporalAddress,
+			Namespace: rootOpts.TemporalNamespace,
+		})
 		if err != nil {
-			log.Fatal().Err(err).Str("file", rootOpts.FilePath).Msg("Unable to load workflow file")
+			log.Fatal().Err(err).Msg("Unable to create client")
+		}
+		defer c.Close()
+
+		// Load the workflow file
+		wf, err := workflow.LoadFromFile(rootOpts.FilePath)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error loading workflow")
 		}
 
-		fmt.Println(string(data))
+		w := worker.New(c, "payments", worker.Options{})
+
+		fmt.Printf("%+v\n", wf)
+
+		err = w.Run(worker.InterruptCh())
+		if err != nil {
+			log.Fatal().Err(err).Msg("Unable to start worker")
+		}
 	},
 }
 
@@ -84,5 +105,23 @@ func init() {
 		"l",
 		viper.GetString("log_level"),
 		fmt.Sprintf("log level: %s", "Set log level"),
+	)
+
+	viper.SetDefault("temporal_address", client.DefaultHostPort)
+	rootCmd.Flags().StringVarP(
+		&rootOpts.TemporalAddress,
+		"temporal-address",
+		"H",
+		viper.GetString("temporal_address"),
+		"Address of the Temporal server",
+	)
+
+	viper.SetDefault("temporal_namespace", client.DefaultNamespace)
+	rootCmd.Flags().StringVarP(
+		&rootOpts.TemporalNamespace,
+		"temporal-namespace",
+		"n",
+		viper.GetString("temporal_namespace"),
+		"Temporal namespace to use",
 	)
 }
