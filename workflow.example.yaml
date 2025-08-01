@@ -1,0 +1,21 @@
+# This is a simple Serverless Workflow that will be
+# translated into a Temporal workflow
+document:
+  dsl: 1.0.0
+  namespace: ignored # Ignored by Temporal
+  name: example # Workflow name
+  version: 0.0.1
+  title: Serverless Workflow
+  summary: An example of how to use Serverless Workflow to define Temporal Workflows
+timeout:
+  after:
+    minutes: 1
+do:
+  - step1:
+      set:
+        petId: 12345
+  - getPet:
+      call: http
+      with:
+        method: get
+        endpoint: https://petstore.swagger.io/v2/pet/{petId}
