@@ -19,7 +19,7 @@
   "containerEnv": {
     "GIT_REPO": "github.com/mrsimonemms/temporal-serverless-workflow",
     "TEMPORAL_ADDRESS": "localhost:7233",
-    "WF_FILE": "./workflow.example.yaml"
+    "WORKFLOW_FILE": "./workflow.example.yaml"
   },
   "forwardPorts": [
     7233,

@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"crypto/tls"
 	"fmt"
 	"os"
 
@@ -31,12 +32,14 @@ import (
 )
 
 var rootOpts struct {
-	FilePath          string
-	LogLevel          string
-	TaskQueue         string
-	TemporalAddress   string
-	TemporalNamespace string
-	Validate          bool
+	FilePath           string
+	LogLevel           string
+	TaskQueue          string
+	TemporalAddress    string
+	TemporalAPIKey     string
+	TemporalTLSEnabled bool
+	TemporalNamespace  string
+	Validate           bool
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -54,11 +57,23 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		connectionOpts := client.ConnectionOptions{}
+		if rootOpts.TemporalTLSEnabled {
+			// Use new to avoid a golint false positive
+			connectionOpts.TLS = new(tls.Config)
+		}
+		var creds client.Credentials
+		if rootOpts.TemporalAPIKey != "" {
+			creds = client.NewAPIKeyStaticCredentials(rootOpts.TemporalAPIKey)
+		}
+
 		// The client and worker are heavyweight objects that should be created once per process.
 		c, err := client.Dial(client.Options{
-			HostPort:  rootOpts.TemporalAddress,
-			Namespace: rootOpts.TemporalNamespace,
-			Logger:    temporal.NewZerologHandler(&log.Logger),
+			ConnectionOptions: connectionOpts,
+			Credentials:       creds,
+			HostPort:          rootOpts.TemporalAddress,
+			Namespace:         rootOpts.TemporalNamespace,
+			Logger:            temporal.NewZerologHandler(&log.Logger),
 		})
 		if err != nil {
 			log.Fatal().Err(err).Msg("Unable to create client")
@@ -103,13 +118,12 @@ func Execute() {
 
 func init() {
 	viper.AutomaticEnv()
-	viper.SetEnvPrefix("WF")
 
 	rootCmd.Flags().StringVarP(
 		&rootOpts.FilePath,
 		"file",
 		"f",
-		viper.GetString("file"),
+		viper.GetString("workflow_file"),
 		"Path to workflow file",
 	)
 
@@ -140,6 +154,18 @@ func init() {
 		"Address of the Temporal server",
 	)
 
+	rootCmd.Flags().StringVar(
+		&rootOpts.TemporalAPIKey,
+		"temporal-api-key",
+		viper.GetString("temporal_api_key"),
+		"API key for Temporal authentication",
+	)
+	// Hide the default value to avoid spaffing the API to command line
+	apiKey := rootCmd.Flags().Lookup("temporal-api-key")
+	if s := apiKey.Value; s.String() != "" {
+		apiKey.DefValue = "***"
+	}
+
 	viper.SetDefault("temporal_namespace", client.DefaultNamespace)
 	rootCmd.Flags().StringVarP(
 		&rootOpts.TemporalNamespace,
@@ -147,6 +173,14 @@ func init() {
 		"n",
 		viper.GetString("temporal_namespace"),
 		"Temporal namespace to use",
+	)
+
+	viper.SetDefault("temporal_tls", client.DefaultNamespace)
+	rootCmd.Flags().BoolVar(
+		&rootOpts.TemporalTLSEnabled,
+		"temporal-tls",
+		viper.GetBool("temporal_tls"),
+		"Enable TLS Temporal connection",
 	)
 
 	viper.SetDefault("validate", true)
