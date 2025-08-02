@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
@@ -29,35 +30,36 @@ import (
 )
 
 type CallHTTPResult struct {
-	Body       []byte
-	Headers    http.Header
-	Status     string
-	StatusCode int
+	Body       string      `json:"body"`
+	Headers    http.Header `json:"headers"`
+	Method     string      `json:"method"`
+	Status     string      `json:"status"`
+	StatusCode int         `json:"statusCode"`
+	URL        string      `json:"url"`
 }
 
 func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, data *Variables) (*CallHTTPResult, error) {
 	logger := activity.GetLogger(ctx)
 	logger.Debug("Running call HTTP activity")
 
-	// @todo(sje): convert any {vars} to the value
-	body := bytes.NewBuffer(callHttp.With.Body)
-	method := callHttp.With.Method
-	url := callHttp.With.Endpoint.String()
+	body := bytes.NewBufferString(ParseVariables(bytes.NewBuffer(callHttp.With.Body).String(), data))
+	method := strings.ToUpper(ParseVariables(callHttp.With.Method, data))
+	url := ParseVariables(callHttp.With.Endpoint.String(), data)
 
 	logger.Debug("Making HTTP call", "method", method, "url", url)
-	req, err := http.NewRequestWithContext(ctx, callHttp.With.Method, url, body)
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		logger.Error("Error making HTTP request", "method", method, "url", url, "error", err)
 		return nil, fmt.Errorf("error making http request: %w", err)
 	}
 
 	for k, v := range callHttp.With.Headers {
-		req.Header.Add(k, v)
+		req.Header.Add(k, ParseVariables(v, data))
 	}
 
 	q := req.URL.Query()
 	for k, v := range callHttp.With.Query {
-		q.Add(k, v.(string))
+		q.Add(k, ParseVariables(v.(string), data))
 	}
 	req.URL.RawQuery = q.Encode()
 
@@ -85,9 +87,11 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, dat
 	}
 
 	return &CallHTTPResult{
-		Body:       bodyRes,
+		Body:       string(bodyRes),
 		Headers:    resp.Header,
+		Method:     method,
 		Status:     resp.Status,
 		StatusCode: resp.StatusCode,
+		URL:        url,
 	}, err
 }

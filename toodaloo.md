@@ -4,5 +4,4 @@
 
 | File | Line Number | Author | Message |
 | --- | --- | --- | --- |
-| [pkg/workflow/callHTTP.go](pkg/workflow/callHTTP.go#L42) | 42 | Simon Emms <simon@simonemms.com> | convert any {vars} to the value |
-| [pkg/workflow/callHTTP.go](pkg/workflow/callHTTP.go#L64) | 64 | Simon Emms <simon@simonemms.com> | configure the timeout |
+| [pkg/workflow/callHTTP.go](pkg/workflow/callHTTP.go#L66) | 66 | Simon Emms <simon@simonemms.com> | configure the timeout |

@@ -17,10 +17,24 @@
 package workflow
 
 import (
+	"bytes"
+	"text/template"
 	"time"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 )
+
+// Parses a string with variables
+func ParseVariables(input string, data *Variables) string {
+	t := template.Must(template.New("values").Parse(input))
+
+	buf := new(bytes.Buffer)
+	if err := t.Execute(buf, data.Data); err != nil {
+		panic(err)
+	}
+
+	return buf.String()
+}
 
 // Converts the SW duration to a time Duration
 func ToDuration(v *model.Duration) time.Duration {

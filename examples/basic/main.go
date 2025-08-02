@@ -18,8 +18,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mrsimonemms/golang-helpers/temporal"
+	"github.com/mrsimonemms/temporal-serverless-workflow/pkg/workflow"
 	"github.com/rs/zerolog/log"
 	"go.temporal.io/sdk/client"
 )
@@ -47,10 +49,14 @@ func main() {
 
 	log.Info().Str("workflowId", we.GetID()).Str("runId", we.GetRunID()).Msg("Started workflow")
 
-	var result any
+	var result map[string]workflow.OutputType
 	if err := we.Get(ctx, &result); err != nil {
 		log.Fatal().Err(err).Msg("Error getting response")
 	}
 
 	log.Info().Interface("result", result).Msg("Workflow completed")
+
+	fmt.Println("===")
+	fmt.Printf("%+v\n", result)
+	fmt.Println("===")
 }

@@ -36,6 +36,7 @@ var rootOpts struct {
 	TaskQueue         string
 	TemporalAddress   string
 	TemporalNamespace string
+	Validate          bool
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -68,6 +69,13 @@ var rootCmd = &cobra.Command{
 		wf, err := tsw.LoadFromFile(rootOpts.FilePath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error loading workflow")
+		}
+
+		if rootOpts.Validate {
+			log.Debug().Msg("Running validation")
+			if err := wf.Validate(); err != nil {
+				log.Fatal().Err(err).Msg("Failed validation")
+			}
 		}
 
 		w := worker.New(c, rootOpts.TaskQueue, worker.Options{})
@@ -139,5 +147,13 @@ func init() {
 		"n",
 		viper.GetString("temporal_namespace"),
 		"Temporal namespace to use",
+	)
+
+	viper.SetDefault("validate", true)
+	rootCmd.Flags().BoolVar(
+		&rootOpts.Validate,
+		"validate",
+		viper.GetBool("validate"),
+		"Run workflow validation",
 	)
 }

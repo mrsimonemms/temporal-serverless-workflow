@@ -31,18 +31,55 @@ type Workflow struct {
 }
 
 type OutputType struct {
-	Type ResultType
-	Data any
+	Type ResultType `json:"type"`
+	Data any        `json:"data"`
 }
 
-type Output map[string]OutputType
-
 type Variables struct {
-	Data map[string]any
+	Data map[string]any `json:"data"`
 }
 
 func (w *Workflow) WorkflowName() string {
 	return w.wf.Document.Name
+}
+
+// Validation of the schema is handled separately. This validates that there is
+// nothing used we've not implemented. This should reduce over time.
+func (w *Workflow) Validate() error {
+	for _, task := range *w.wf.Do {
+		if emit := task.AsEmitTask(); emit != nil {
+			return fmt.Errorf("emit tasks are not supported")
+		}
+		if forTask := task.AsForTask(); forTask != nil {
+			return fmt.Errorf("for tasks are not supported")
+		}
+		if fork := task.AsForkTask(); fork != nil {
+			return fmt.Errorf("fork tasks are not supported")
+		}
+		if grpc := task.AsCallGRPCTask(); grpc != nil {
+			return fmt.Errorf("grpc tasks are not supported")
+		}
+		if listen := task.AsListenTask(); listen != nil {
+			return fmt.Errorf("listen tasks are not supported")
+		}
+		if openapi := task.AsCallOpenAPITask(); openapi != nil {
+			return fmt.Errorf("openapi tasks are not supported")
+		}
+		if raise := task.AsRaiseTask(); raise != nil {
+			return fmt.Errorf("raise tasks are not supported")
+		}
+		if run := task.AsRunTask(); run != nil {
+			return fmt.Errorf("run tasks are not supported")
+		}
+		if switchTask := task.AsSwitchTask(); switchTask != nil {
+			return fmt.Errorf("switch tasks are not supported")
+		}
+		if try := task.AsTryTask(); try != nil {
+			return fmt.Errorf("try tasks are not supported")
+		}
+	}
+
+	return nil
 }
 
 func LoadFromFile(file string) (*Workflow, error) {
