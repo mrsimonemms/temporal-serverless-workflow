@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "temporal-serverless-workflow.fullname" . }}
+  labels:
+    {{- include "temporal-serverless-workflow.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "temporal-serverless-workflow.selectorLabels" . | nindent 4 }}
