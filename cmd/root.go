@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mrsimonemms/golang-helpers/temporal"
 	tsw "github.com/mrsimonemms/temporal-serverless-workflow/pkg/workflow"
@@ -32,6 +33,7 @@ import (
 )
 
 var rootOpts struct {
+	EnvPrefix          string
 	FilePath           string
 	LogLevel           string
 	TaskQueue          string
@@ -55,6 +57,14 @@ var rootCmd = &cobra.Command{
 		zerolog.SetGlobalLevel(level)
 
 		return nil
+	},
+	PreRun: func(cmd *cobra.Command, args []string) {
+		if rootOpts.EnvPrefix == "" {
+			log.Fatal().Str("prefix", rootOpts.EnvPrefix).Msg("Env prefix cannot be empty")
+		}
+		if strings.HasSuffix(rootOpts.EnvPrefix, "_") {
+			log.Fatal().Str("prefix", rootOpts.EnvPrefix).Msg("Env prefix cannot end with underscore (_)")
+		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		connectionOpts := client.ConnectionOptions{}
@@ -81,7 +91,7 @@ var rootCmd = &cobra.Command{
 		defer c.Close()
 
 		// Load the workflow file
-		wf, err := tsw.LoadFromFile(rootOpts.FilePath)
+		wf, err := tsw.LoadFromFile(rootOpts.FilePath, rootOpts.EnvPrefix)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error loading workflow")
 		}
@@ -125,6 +135,14 @@ func init() {
 		"f",
 		viper.GetString("workflow_file"),
 		"Path to workflow file",
+	)
+
+	viper.SetDefault("env_prefix", "TSW")
+	rootCmd.Flags().StringVar(
+		&rootOpts.EnvPrefix,
+		"env-prefix",
+		viper.GetString("env_prefix"),
+		"Load envvars with this prefix to the workflow",
 	)
 
 	viper.SetDefault("log_level", zerolog.InfoLevel.String())

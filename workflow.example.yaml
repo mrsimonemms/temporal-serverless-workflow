@@ -14,6 +14,7 @@ do:
   - step1:
       set:
         userId: 2
+        envvar: "{{ .TSW_EXAMPLE_ENVVAR }}"
   - wait:
       wait:
         seconds: 5

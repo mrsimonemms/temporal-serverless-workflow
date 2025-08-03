@@ -19,6 +19,8 @@ package workflow
 import (
 	"fmt"
 	"maps"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
@@ -39,15 +41,23 @@ func (w *Workflow) ToTemporalWorkflow(ctx workflow.Context) (map[string]OutputTy
 		StartToCloseTimeout: timeout,
 	})
 
-	data := &Variables{
+	vars := &Variables{
 		Data: make(map[string]any),
 	}
 	output := map[string]OutputType{}
 
+	// Load in any envvars with the prefix
+	for _, e := range os.Environ() {
+		pair := strings.SplitN(e, "=", 2)
+		if strings.HasPrefix(pair[0], w.envPrefix) {
+			vars.Data[pair[0]] = pair[1]
+		}
+	}
+
 	for _, task := range *w.wf.Do {
 		logger.Info("Running task", "name", task.Key)
 
-		if err := w.executeActivity(ctx, task, data, output); err != nil {
+		if err := w.executeActivity(ctx, task, vars, output); err != nil {
 			return nil, err
 		}
 	}
@@ -62,7 +72,14 @@ func (w *Workflow) executeActivity(ctx workflow.Context, task *model.TaskItem, d
 	// Set data
 	if set := task.AsSetTask(); set != nil {
 		logger.Debug("Set data")
-		maps.Copy(data.Data, set.Set)
+
+		for k, v := range set.Set {
+			if s, ok := v.(string); ok {
+				logger.Debug("Parsing value as string", "key", k)
+				v = ParseVariables(s, data)
+			}
+			data.Data[ParseVariables(k, data)] = v
+		}
 	}
 
 	// Have a little snooze

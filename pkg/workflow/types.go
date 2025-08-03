@@ -20,14 +20,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"github.com/serverlessworkflow/sdk-go/v3/parser"
 )
 
 type Workflow struct {
-	data []byte
-	wf   *model.Workflow
+	data      []byte
+	envPrefix string
+	wf        *model.Workflow
 }
 
 type OutputType struct {
@@ -82,7 +84,7 @@ func (w *Workflow) Validate() error {
 	return nil
 }
 
-func LoadFromFile(file string) (*Workflow, error) {
+func LoadFromFile(file, envPrefix string) (*Workflow, error) {
 	data, err := os.ReadFile(filepath.Clean(file))
 	if err != nil {
 		return nil, fmt.Errorf("error loading file: %w", err)
@@ -94,7 +96,8 @@ func LoadFromFile(file string) (*Workflow, error) {
 	}
 
 	return &Workflow{
-		data: data,
-		wf:   wf,
+		data:      data,
+		envPrefix: strings.ToUpper(envPrefix),
+		wf:        wf,
 	}, nil
 }

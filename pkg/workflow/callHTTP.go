@@ -38,13 +38,13 @@ type CallHTTPResult struct {
 	URL        string      `json:"url"`
 }
 
-func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, data *Variables) (*CallHTTPResult, error) {
+func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, vars *Variables) (*CallHTTPResult, error) {
 	logger := activity.GetLogger(ctx)
 	logger.Debug("Running call HTTP activity")
 
-	body := bytes.NewBufferString(ParseVariables(bytes.NewBuffer(callHttp.With.Body).String(), data))
-	method := strings.ToUpper(ParseVariables(callHttp.With.Method, data))
-	url := ParseVariables(callHttp.With.Endpoint.String(), data)
+	body := bytes.NewBufferString(ParseVariables(bytes.NewBuffer(callHttp.With.Body).String(), vars))
+	method := strings.ToUpper(ParseVariables(callHttp.With.Method, vars))
+	url := ParseVariables(callHttp.With.Endpoint.String(), vars)
 
 	logger.Debug("Making HTTP call", "method", method, "url", url)
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
@@ -54,12 +54,12 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, dat
 	}
 
 	for k, v := range callHttp.With.Headers {
-		req.Header.Add(k, ParseVariables(v, data))
+		req.Header.Add(k, ParseVariables(v, vars))
 	}
 
 	q := req.URL.Query()
 	for k, v := range callHttp.With.Query {
-		q.Add(k, ParseVariables(v.(string), data))
+		q.Add(k, ParseVariables(v.(string), vars))
 	}
 	req.URL.RawQuery = q.Encode()
 
