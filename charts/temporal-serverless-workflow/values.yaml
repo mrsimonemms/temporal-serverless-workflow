@@ -1,0 +1,150 @@
+# Default values for temporal-serverless-workflow.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Number of replicas
+replicaCount: 1
+
+# -- Accepts any of the command line arguments
+config:
+  # temporal-address: temporal:7233
+
+# -- Additional environment variables
+envvars:
+  # - name: TEMPORAL_ADDRESS
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: temporal-config
+  #       key: address
+  # - name: TEMPORAL_API_KEY
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: temporal-config
+  #       key: api-key
+  # - name: TEMPORAL_NAMESPACE
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: temporal-config
+  #       key: namespace
+  # - name: TEMPORAL_TLS
+  #   value: "true"
+  # - name: LOG_LEVEL
+  #   value: trace
+  # - name: TSW_EXAMPLE_ENVVAR
+  #   value: some-value
+
+workflow:
+  # -- Use the inline workflow. If false, you must declare a secret with the workflow in `workflow.yaml`
+  useInline: true
+  # -- Name of the secret containing `workflow.yaml`
+  secret: workflow
+  # -- Location the workflow volumes is mapped
+  file: /data/workflow.yaml
+  # -- Workflow YAML
+  inline:
+    document:
+      dsl: 1.0.0
+      namespace: ignored # Ignored by Temporal
+      name: example # Workflow name
+      version: 0.0.1
+      title: Serverless Workflow
+      summary: An example of how to use Serverless Workflow to define Temporal Workflows
+    timeout:
+      after:
+        minutes: 1
+    do:
+      - step1:
+          set:
+            userId: 2
+      - wait:
+          wait:
+            seconds: 5
+      - getUser:
+          call: http
+          with:
+            method: get
+            endpoint: https://jsonplaceholder.typicode.com/users/{{ .userId }}
+
+image:
+  # -- Image repositiory
+  repository: ghcr.io/mrsimonemms/temporal-serverless-workflow
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Image tag - defaults to the chart's `Version` if not set
+  tag: ""
+
+# -- Docker registry secret names
+imagePullSecrets: []
+# -- String to partially override name
+nameOverride: ""
+# -- String to fully override names
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use. If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -- Pod [annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+podAnnotations: {}
+# -- Pod [labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
+podLabels: {}
+
+# -- Pod's [security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)
+podSecurityContext: {}
+
+# -- Container's security context
+securityContext: {}
+
+service:
+  # -- Service's type
+  type: ClusterIP
+  # -- Service's port
+  port: 3000
+
+# -- Configure resources available
+resources: {}
+
+# livenessProbe:
+#   httpGet:
+#     # -- Path to demonstrate app liveness
+#     path: /livez
+#     # -- Port to demonstrate app liveness
+#     port: http
+# readinessProbe:
+#   httpGet:
+#     # -- Path to demonstrate app readiness
+#     path: /livez
+#     # -- Port to demonstrate app readiness
+#     port: http
+
+autoscaling:
+  # -- Autoscaling enabled
+  enabled: false
+  # -- Minimum replicas
+  minReplicas: 1
+  # -- Maximum replicas
+  maxReplicas: 100
+  # -- When to trigger a new replica
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# -- Additional volumes on the output Deployment definition.
+volumes: []
+
+# -- Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+
+# -- Node selector
+nodeSelector: {}
+
+# -- Node toleration
+tolerations: []
+
+# -- Node affinity
+affinity: {}
