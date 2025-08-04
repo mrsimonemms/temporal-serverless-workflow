@@ -23,3 +23,20 @@ do:
       with:
         method: get
         endpoint: https://jsonplaceholder.typicode.com/users/{{ .userId }}
+  - raiseAlarm:
+      fork:
+        compete: false
+        branches:
+          - callNurse:
+              call: http
+              with:
+                method: get
+                endpoint: https://jsonplaceholder.typicode.com/users/1
+          - wait:
+              wait:
+                seconds: 5
+          - callDoctor:
+              call: http
+              with:
+                method: get
+                endpoint: https://jsonplaceholder.typicode.com/users/3

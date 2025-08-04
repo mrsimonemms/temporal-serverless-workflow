@@ -61,9 +61,6 @@ func (w *Workflow) Validate() error {
 		if forTask := task.AsForTask(); forTask != nil {
 			return fmt.Errorf("for tasks are not supported")
 		}
-		if fork := task.AsForkTask(); fork != nil {
-			return fmt.Errorf("fork tasks are not supported")
-		}
 		if grpc := task.AsCallGRPCTask(); grpc != nil {
 			return fmt.Errorf("grpc tasks are not supported")
 		}

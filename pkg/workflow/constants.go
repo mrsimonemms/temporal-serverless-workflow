@@ -22,6 +22,7 @@ type ResultType string
 
 const (
 	CallHTTPResultType ResultType = "CallHTTP"
+	ForkResultType     ResultType = "Fork"
 )
 
 const defaultWorkflowTimeout = time.Minute * 5

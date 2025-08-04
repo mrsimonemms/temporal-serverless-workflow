@@ -18,11 +18,19 @@ package workflow
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 )
+
+func GenerateChildWorkflowName(prefix string, prefixes ...string) string {
+	prefixes = append([]string{prefix}, prefixes...)
+
+	return fmt.Sprintf("workflow_%s", strings.Join(prefixes, "_"))
+}
 
 // Parses a string with variables
 func ParseVariables(input string, data *Variables) string {
