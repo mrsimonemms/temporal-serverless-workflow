@@ -21,12 +21,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/workflow"
 )
 
 type CallHTTPResult struct {
@@ -94,4 +96,28 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, var
 		StatusCode: resp.StatusCode,
 		URL:        url,
 	}, err
+}
+
+func httpTaskImpl(task *model.CallHTTP, key string) TemporalWorkflowFunc {
+	var a *activities
+
+	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
+		logger := workflow.GetLogger(ctx)
+
+		logger.Debug("Calling HTTP endpoint")
+
+		var result CallHTTPResult
+		if err := workflow.ExecuteActivity(ctx, a.CallHTTP, task, data).Get(ctx, &result); err != nil {
+			return fmt.Errorf("error calling http task: %w", err)
+		}
+
+		maps.Copy(output, map[string]OutputType{
+			key: {
+				Type: CallHTTPResultType,
+				Data: result,
+			},
+		})
+
+		return nil
+	}
 }

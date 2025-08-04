@@ -18,7 +18,6 @@ package workflow
 
 import (
 	"fmt"
-	"maps"
 	"os"
 	"strings"
 	"time"
@@ -27,18 +26,27 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func (w *Workflow) ToTemporalWorkflow(ctx workflow.Context) (map[string]OutputType, error) {
+type TemporalWorkflowTask struct {
+	Key  string
+	Task TemporalWorkflowFunc
+}
+
+type TemporalWorkflowFunc func(ctx workflow.Context, data *Variables, output map[string]OutputType) error
+
+type TemporalWorkflow struct {
+	EnvPrefix string
+	Name      string
+	Timeout   time.Duration
+	Tasks     []TemporalWorkflowTask
+}
+
+func (t *TemporalWorkflow) Workflow(ctx workflow.Context, data *Variables) (map[string]OutputType, error) {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("Running workflow")
 
-	timeout := time.Minute * 5
-	if w.wf.Timeout != nil && w.wf.Timeout.Timeout != nil && w.wf.Timeout.Timeout.After != nil {
-		timeout = ToDuration(w.wf.Timeout.Timeout.After)
-	}
-
-	logger.Debug("Setting workflow options", "StartToCloseTimeout", timeout)
+	logger.Debug("Setting workflow options", "StartToCloseTimeout", t.Timeout)
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: timeout,
+		StartToCloseTimeout: t.Timeout,
 	})
 
 	vars := &Variables{
@@ -49,15 +57,15 @@ func (w *Workflow) ToTemporalWorkflow(ctx workflow.Context) (map[string]OutputTy
 	// Load in any envvars with the prefix
 	for _, e := range os.Environ() {
 		pair := strings.SplitN(e, "=", 2)
-		if strings.HasPrefix(pair[0], w.envPrefix) {
+		if strings.HasPrefix(pair[0], t.EnvPrefix) {
 			vars.Data[pair[0]] = pair[1]
 		}
 	}
 
-	for _, task := range *w.wf.Do {
+	for _, task := range t.Tasks {
 		logger.Info("Running task", "name", task.Key)
 
-		if err := w.executeActivity(ctx, task, vars, output); err != nil {
+		if err := task.Task(ctx, vars, output); err != nil {
 			return nil, err
 		}
 	}
@@ -65,50 +73,56 @@ func (w *Workflow) ToTemporalWorkflow(ctx workflow.Context) (map[string]OutputTy
 	return output, nil
 }
 
-func (w *Workflow) executeActivity(ctx workflow.Context, task *model.TaskItem, data *Variables, output map[string]OutputType) error {
-	logger := workflow.GetLogger(ctx)
-	var a *activities
+func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*TemporalWorkflow, error) {
+	wfs := make([]*TemporalWorkflow, 0)
 
-	// Set data
-	if set := task.AsSetTask(); set != nil {
-		logger.Debug("Set data")
-
-		for k, v := range set.Set {
-			if s, ok := v.(string); ok {
-				logger.Debug("Parsing value as string", "key", k)
-				v = ParseVariables(s, data)
-			}
-			data.Data[ParseVariables(k, data)] = v
-		}
+	timeout := defaultWorkflowTimeout
+	if w.wf.Timeout != nil && w.wf.Timeout.Timeout != nil && w.wf.Timeout.Timeout.After != nil {
+		timeout = ToDuration(w.wf.Timeout.Timeout.After)
 	}
 
-	// Have a little snooze
-	if wait := task.AsWaitTask(); wait != nil {
-		duration := ToDuration(wait.Wait)
-
-		logger.Debug("Sleeping", "duration", duration.String())
-
-		if err := workflow.Sleep(ctx, duration); err != nil {
-			return fmt.Errorf("error sleeping: %w", err)
-		}
+	wf := &TemporalWorkflow{
+		EnvPrefix: w.envPrefix,
+		Name:      name,
+		Tasks:     make([]TemporalWorkflowTask, 0),
+		Timeout:   timeout,
 	}
 
-	// Call an HTTP endpoint
-	if http := task.AsCallHTTPTask(); http != nil {
-		logger.Debug("Calling HTTP endpoint")
-
-		var result CallHTTPResult
-		if err := workflow.ExecuteActivity(ctx, a.CallHTTP, http, data).Get(ctx, &result); err != nil {
-			return fmt.Errorf("error calling http task: %w", err)
+	// Iterate over the task list to build out our workflow(s)
+	for _, item := range *tasks {
+		var task TemporalWorkflowFunc
+		if http := item.AsCallHTTPTask(); http != nil {
+			task = httpTaskImpl(http, item.Key)
 		}
 
-		maps.Copy(output, map[string]OutputType{
-			task.Key: {
-				Type: CallHTTPResultType,
-				Data: result,
-			},
+		if set := item.AsSetTask(); set != nil {
+			task = setTaskImpl(set)
+		}
+
+		if wait := item.AsWaitTask(); wait != nil {
+			task = waitTaskImpl(wait)
+		}
+
+		wf.Tasks = append(wf.Tasks, TemporalWorkflowTask{
+			Key:  item.Key,
+			Task: task,
 		})
 	}
 
-	return nil
+	wfs = append(wfs, wf)
+
+	return wfs, nil
+}
+
+// This is the main workflow definition.
+func (w *Workflow) BuildWorkflows() ([]*TemporalWorkflow, error) {
+	wfs := make([]*TemporalWorkflow, 0)
+
+	d, err := w.workflowBuilder(w.wf.Do, w.WorkflowName())
+	if err != nil {
+		return nil, fmt.Errorf("error building workflows: %w", err)
+	}
+
+	wfs = append(wfs, d...)
+	return wfs, nil
 }

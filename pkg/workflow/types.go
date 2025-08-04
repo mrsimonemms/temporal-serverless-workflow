@@ -26,6 +26,8 @@ import (
 	"github.com/serverlessworkflow/sdk-go/v3/parser"
 )
 
+type activities struct{}
+
 type Workflow struct {
 	data      []byte
 	envPrefix string
@@ -39,6 +41,10 @@ type OutputType struct {
 
 type Variables struct {
 	Data map[string]any `json:"data"`
+}
+
+func (w *Workflow) Activities() *activities {
+	return &activities{}
 }
 
 func (w *Workflow) WorkflowName() string {

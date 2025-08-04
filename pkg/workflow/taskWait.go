@@ -16,12 +16,25 @@
 
 package workflow
 
-import "time"
+import (
+	"fmt"
 
-type ResultType string
-
-const (
-	CallHTTPResultType ResultType = "CallHTTP"
+	"github.com/serverlessworkflow/sdk-go/v3/model"
+	"go.temporal.io/sdk/workflow"
 )
 
-const defaultWorkflowTimeout = time.Minute * 5
+func waitTaskImpl(task *model.WaitTask) TemporalWorkflowFunc {
+	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
+		logger := workflow.GetLogger(ctx)
+
+		duration := ToDuration(task.Wait)
+
+		logger.Debug("Sleeping", "duration", duration.String())
+
+		if err := workflow.Sleep(ctx, duration); err != nil {
+			return fmt.Errorf("error sleeping: %w", err)
+		}
+
+		return nil
+	}
+}

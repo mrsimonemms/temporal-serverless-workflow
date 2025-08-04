@@ -105,10 +105,20 @@ var rootCmd = &cobra.Command{
 
 		w := worker.New(c, rootOpts.TaskQueue, worker.Options{})
 
-		w.RegisterWorkflowWithOptions(wf.ToTemporalWorkflow, workflow.RegisterOptions{
-			Name: wf.WorkflowName(),
-		})
-		w.RegisterActivity(wf.ToActivities())
+		workflows, err := wf.BuildWorkflows()
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error building workflows")
+		}
+
+		for _, wf := range workflows {
+			log.Debug().Str("name", wf.Name).Msg("Registering workflow")
+			w.RegisterWorkflowWithOptions(wf.Workflow, workflow.RegisterOptions{
+				Name: wf.Name,
+			})
+		}
+
+		log.Debug().Msg("Registering activities")
+		w.RegisterActivity(wf.Activities())
 
 		err = w.Run(worker.InterruptCh())
 		if err != nil {

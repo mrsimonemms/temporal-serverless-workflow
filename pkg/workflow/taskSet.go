@@ -16,12 +16,23 @@
 
 package workflow
 
-type activities struct {
-	workflow *Workflow
-}
+import (
+	"github.com/serverlessworkflow/sdk-go/v3/model"
+	"go.temporal.io/sdk/workflow"
+)
 
-func (w *Workflow) ToActivities() *activities {
-	return &activities{
-		workflow: w,
+func setTaskImpl(task *model.SetTask) TemporalWorkflowFunc {
+	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
+		logger := workflow.GetLogger(ctx)
+
+		for k, v := range task.Set {
+			if s, ok := v.(string); ok {
+				logger.Debug("Parsing value as string", "key", k)
+				v = ParseVariables(s, data)
+			}
+			data.Data[ParseVariables(k, data)] = v
+		}
+
+		return nil
 	}
 }
