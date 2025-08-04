@@ -19,51 +19,52 @@ package workflow
 import (
 	"fmt"
 	"maps"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"go.temporal.io/sdk/workflow"
 )
 
-func (w *Workflow) ToTemporalWorkflow(ctx workflow.Context) (map[string]OutputType, error) {
-	logger := workflow.GetLogger(ctx)
-	logger.Info("Running workflow")
+// type TW func(ctx workflow.Context) (map[string]OutputType, error)
 
-	timeout := time.Minute * 5
-	if w.wf.Timeout != nil && w.wf.Timeout.Timeout != nil && w.wf.Timeout.Timeout.After != nil {
-		timeout = ToDuration(w.wf.Timeout.Timeout.After)
-	}
+// func (w *Workflow) ToTemporalWorkflow() TW {
+// 	return func(ctx workflow.Context) (map[string]OutputType, error) {
+// 		logger := workflow.GetLogger(ctx)
+// 		logger.Info("Running workflow")
 
-	logger.Debug("Setting workflow options", "StartToCloseTimeout", timeout)
-	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: timeout,
-	})
+// 		timeout := time.Minute * 5
+// 		if w.wf.Timeout != nil && w.wf.Timeout.Timeout != nil && w.wf.Timeout.Timeout.After != nil {
+// 			timeout = ToDuration(w.wf.Timeout.Timeout.After)
+// 		}
 
-	vars := &Variables{
-		Data: make(map[string]any),
-	}
-	output := map[string]OutputType{}
+// 		logger.Debug("Setting workflow options", "StartToCloseTimeout", timeout)
+// 		ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+// 			StartToCloseTimeout: timeout,
+// 		})
 
-	// Load in any envvars with the prefix
-	for _, e := range os.Environ() {
-		pair := strings.SplitN(e, "=", 2)
-		if strings.HasPrefix(pair[0], w.envPrefix) {
-			vars.Data[pair[0]] = pair[1]
-		}
-	}
+// 		vars := &Variables{
+// 			Data: make(map[string]any),
+// 		}
+// 		output := map[string]OutputType{}
 
-	for _, task := range *w.wf.Do {
-		logger.Info("Running task", "name", task.Key)
+// 		// Load in any envvars with the prefix
+// 		for _, e := range os.Environ() {
+// 			pair := strings.SplitN(e, "=", 2)
+// 			if strings.HasPrefix(pair[0], w.envPrefix) {
+// 				vars.Data[pair[0]] = pair[1]
+// 			}
+// 		}
 
-		if err := w.executeActivity(ctx, task, vars, output); err != nil {
-			return nil, err
-		}
-	}
+// 		for _, task := range *w.wf.Do {
+// 			logger.Info("Running task", "name", task.Key)
 
-	return output, nil
-}
+// 			if err := w.executeActivity(ctx, task, vars, output); err != nil {
+// 				return nil, err
+// 			}
+// 		}
+
+// 		return output, nil
+// 	}
+// }
 
 func (w *Workflow) executeActivity(ctx workflow.Context, task *model.TaskItem, data *Variables, output map[string]OutputType) error {
 	logger := workflow.GetLogger(ctx)

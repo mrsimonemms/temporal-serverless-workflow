@@ -23,3 +23,13 @@ do:
       with:
         method: get
         endpoint: https://jsonplaceholder.typicode.com/users/{{ .userId }}
+  # - processOrder:
+  #     switch:
+  #       - case1:
+  #           when: .orderType == "electronic"
+  #           then: processElectronicOrder
+  #       - case2:
+  #           when: .orderType == "physical"
+  #           then: processPhysicalOrder
+  #       - default:
+  #           then: handleUnknownOrderType

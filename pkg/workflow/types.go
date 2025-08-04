@@ -17,11 +17,15 @@
 package workflow
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/serverlessworkflow/sdk-go/v3/impl"
+	"github.com/serverlessworkflow/sdk-go/v3/impl/ctx"
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"github.com/serverlessworkflow/sdk-go/v3/parser"
 )
@@ -30,6 +34,8 @@ type Workflow struct {
 	data      []byte
 	envPrefix string
 	wf        *model.Workflow
+	runnerCtx ctx.WorkflowContext
+	ctx       context.Context
 }
 
 type OutputType struct {
@@ -84,6 +90,96 @@ func (w *Workflow) Validate() error {
 	return nil
 }
 
+// AddLocalExprVars implements impl.TaskSupport.
+func (w *Workflow) AddLocalExprVars(vars map[string]any) {
+	w.runnerCtx.AddLocalExprVars(vars)
+}
+
+// CloneWithContext implements impl.TaskSupport.
+func (w *Workflow) CloneWithContext(newCtx context.Context) impl.TaskSupport {
+	clonedWfCtx := w.runnerCtx.Clone()
+
+	ctxWithWf := ctx.WithWorkflowContext(newCtx, clonedWfCtx)
+
+	return &Workflow{
+		data:      w.data,
+		envPrefix: w.envPrefix,
+		wf:        w.wf,
+		ctx:       ctxWithWf,
+		runnerCtx: clonedWfCtx,
+	}
+}
+
+// GetContext implements impl.TaskSupport.
+func (w *Workflow) GetContext() context.Context {
+	return w.ctx
+}
+
+// GetTaskReference implements impl.TaskSupport.
+func (w *Workflow) GetTaskReference() string {
+	return w.runnerCtx.GetTaskReference()
+}
+
+// GetWorkflowDef implements impl.TaskSupport.
+func (w *Workflow) GetWorkflowDef() *model.Workflow {
+	return w.wf
+}
+
+// RemoveLocalExprVars implements impl.TaskSupport.
+func (w *Workflow) RemoveLocalExprVars(keys ...string) {
+	w.runnerCtx.RemoveLocalExprVars(keys...)
+}
+
+// SetLocalExprVars implements impl.TaskSupport.
+func (w *Workflow) SetLocalExprVars(vars map[string]any) {
+	w.runnerCtx.SetLocalExprVars(vars)
+}
+
+// SetTaskDef implements impl.TaskSupport.
+func (w *Workflow) SetTaskDef(task model.Task) error {
+	return w.runnerCtx.SetTaskDef(task)
+}
+
+// SetTaskName implements impl.TaskSupport.
+func (w *Workflow) SetTaskName(name string) {
+	w.runnerCtx.SetTaskName(name)
+}
+
+// SetTaskRawInput implements impl.TaskSupport.
+func (w *Workflow) SetTaskRawInput(input any) {
+	w.runnerCtx.SetTaskRawInput(input)
+}
+
+// SetTaskRawOutput implements impl.TaskSupport.
+func (w *Workflow) SetTaskRawOutput(output any) {
+	w.runnerCtx.SetTaskRawOutput(output)
+}
+
+// SetTaskReferenceFromName implements impl.TaskSupport.
+func (w *Workflow) SetTaskReferenceFromName(taskName string) error {
+	ref, err := impl.GenerateJSONPointer(w.wf, taskName)
+	if err != nil {
+		return err
+	}
+	w.runnerCtx.SetTaskReference(ref)
+	return nil
+}
+
+// SetTaskStartedAt implements impl.TaskSupport.
+func (w *Workflow) SetTaskStartedAt(startedAt time.Time) {
+	w.runnerCtx.SetTaskStartedAt(startedAt)
+}
+
+// SetTaskStatus implements impl.TaskSupport.
+func (w *Workflow) SetTaskStatus(task string, status ctx.StatusPhase) {
+	w.runnerCtx.SetTaskStatus(task, status)
+}
+
+// SetWorkflowInstanceCtx implements impl.TaskSupport.
+func (w *Workflow) SetWorkflowInstanceCtx(value any) {
+	w.runnerCtx.SetInstanceCtx(value)
+}
+
 func LoadFromFile(file, envPrefix string) (*Workflow, error) {
 	data, err := os.ReadFile(filepath.Clean(file))
 	if err != nil {
@@ -95,9 +191,16 @@ func LoadFromFile(file, envPrefix string) (*Workflow, error) {
 		return nil, fmt.Errorf("error loading yaml: %w", err)
 	}
 
+	runnerCtx, err := ctx.NewWorkflowContext(wf)
+	if err != nil {
+		return nil, fmt.Errorf("error generating workflow context: %w", err)
+	}
+
 	return &Workflow{
+		ctx:       ctx.WithWorkflowContext(context.Background(), runnerCtx),
 		data:      data,
 		envPrefix: strings.ToUpper(envPrefix),
 		wf:        wf,
+		runnerCtx: runnerCtx,
 	}, nil
 }

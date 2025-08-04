@@ -29,7 +29,6 @@ import (
 	"github.com/spf13/viper"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
-	"go.temporal.io/sdk/workflow"
 )
 
 var rootOpts struct {
@@ -96,19 +95,25 @@ var rootCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("Error loading workflow")
 		}
 
-		if rootOpts.Validate {
-			log.Debug().Msg("Running validation")
-			if err := wf.Validate(); err != nil {
-				log.Fatal().Err(err).Msg("Failed validation")
-			}
-		}
+		// if rootOpts.Validate {
+		// 	log.Debug().Msg("Running validation")
+		// 	if err := wf.Validate(); err != nil {
+		// 		log.Fatal().Err(err).Msg("Failed validation")
+		// 	}
+		// }
 
 		w := worker.New(c, rootOpts.TaskQueue, worker.Options{})
 
-		w.RegisterWorkflowWithOptions(wf.ToTemporalWorkflow, workflow.RegisterOptions{
-			Name: wf.WorkflowName(),
-		})
-		w.RegisterActivity(wf.ToActivities())
+		r, err := wf.Generate()
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error generating workflows")
+		}
+		fmt.Printf("%+v\n", r)
+
+		// w.RegisterWorkflowWithOptions(wf.ToTemporalWorkflow(), workflow.RegisterOptions{
+		// 	Name: wf.WorkflowName(),
+		// })
+		// w.RegisterActivity(wf.ToActivities())
 
 		err = w.Run(worker.InterruptCh())
 		if err != nil {
