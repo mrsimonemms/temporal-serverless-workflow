@@ -21,4 +21,5 @@ import "fmt"
 var (
 	ErrDuplicateKey    = fmt.Errorf("duplicate key found")
 	ErrUnsupportedTask = fmt.Errorf("task not supported")
+	ErrUnsupportedDSL  = fmt.Errorf("unsupported dsl")
 )

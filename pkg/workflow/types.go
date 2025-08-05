@@ -98,6 +98,11 @@ func LoadFromFile(file, envPrefix string) (*Workflow, error) {
 		return nil, fmt.Errorf("error loading yaml: %w", err)
 	}
 
+	// Only support dsl v1.0.0 - we may support later versions
+	if dsl := wf.Document.DSL; dsl != "1.0.0" {
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedDSL, dsl)
+	}
+
 	return &Workflow{
 		data:      data,
 		envPrefix: strings.ToUpper(envPrefix),
