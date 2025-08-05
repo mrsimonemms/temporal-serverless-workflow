@@ -98,6 +98,14 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 	// Iterate over the task list to build out our workflow(s)
 	for _, item := range *tasks {
 		var task TemporalWorkflowFunc
+		var err error
+
+		if fork := item.AsForkTask(); fork != nil {
+			if task, err = forkTaskImpl(fork, item, w); err != nil {
+				return nil, err
+			}
+		}
+
 		if http := item.AsCallHTTPTask(); http != nil {
 			task = httpTaskImpl(http, item.Key)
 		}
