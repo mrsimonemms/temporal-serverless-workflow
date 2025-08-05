@@ -56,31 +56,31 @@ func (w *Workflow) WorkflowName() string {
 func (w *Workflow) Validate() error {
 	for _, task := range *w.wf.Do {
 		if emit := task.AsEmitTask(); emit != nil {
-			return fmt.Errorf("emit tasks are not supported")
+			return fmt.Errorf("%w: emit", ErrUnsupportedTask)
 		}
 		if forTask := task.AsForTask(); forTask != nil {
-			return fmt.Errorf("for tasks are not supported")
+			return fmt.Errorf("%w: for", ErrUnsupportedTask)
 		}
 		if grpc := task.AsCallGRPCTask(); grpc != nil {
-			return fmt.Errorf("grpc tasks are not supported")
+			return fmt.Errorf("%w: grpc", ErrUnsupportedTask)
 		}
 		if listen := task.AsListenTask(); listen != nil {
-			return fmt.Errorf("listen tasks are not supported")
+			return fmt.Errorf("%w: listen", ErrUnsupportedTask)
 		}
 		if openapi := task.AsCallOpenAPITask(); openapi != nil {
-			return fmt.Errorf("openapi tasks are not supported")
+			return fmt.Errorf("%w: openapi", ErrUnsupportedTask)
 		}
 		if raise := task.AsRaiseTask(); raise != nil {
-			return fmt.Errorf("raise tasks are not supported")
+			return fmt.Errorf("%w: raise", ErrUnsupportedTask)
 		}
 		if run := task.AsRunTask(); run != nil {
-			return fmt.Errorf("run tasks are not supported")
+			return fmt.Errorf("%w: run", ErrUnsupportedTask)
 		}
 		if switchTask := task.AsSwitchTask(); switchTask != nil {
-			return fmt.Errorf("switch tasks are not supported")
+			return fmt.Errorf("%w: switch", ErrUnsupportedTask)
 		}
 		if try := task.AsTryTask(); try != nil {
-			return fmt.Errorf("try tasks are not supported")
+			return fmt.Errorf("%w: try", ErrUnsupportedTask)
 		}
 	}
 
