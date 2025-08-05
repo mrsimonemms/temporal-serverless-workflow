@@ -98,6 +98,8 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, var
 		bodyStr = string(bodyRes)
 	}
 
+	// @todo(sje): decide how to handle a non-2xx response
+
 	return &CallHTTPResult{
 		Body:       bodyStr,
 		BodyJSON:   bodyJSON,

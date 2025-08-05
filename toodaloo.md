@@ -5,4 +5,5 @@
 | File | Line Number | Author | Message |
 | --- | --- | --- | --- |
 | [pkg/workflow/taskCallHTTP.go](pkg/workflow/taskCallHTTP.go#L69) | 69 | Simon Emms <simon@simonemms.com> | configure the timeout |
+| [pkg/workflow/taskCallHTTP.go](pkg/workflow/taskCallHTTP.go#L101) | 101 | Simon Emms <simon@simonemms.com> | decide how to handle a non-2xx response |
 | [pkg/workflow/taskFork.go](pkg/workflow/taskFork.go#L32) | 32 | Simon Emms <simon@simonemms.com> | handle competing forks |
