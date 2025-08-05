@@ -31,7 +31,7 @@ type TemporalWorkflowTask struct {
 	Task TemporalWorkflowFunc
 }
 
-type TemporalWorkflowFunc func(ctx workflow.Context, data *Variables, output map[string]OutputType) error
+type TemporalWorkflowFunc func(ctx workflow.Context, data *Variables, output map[string]OutputType) (*Future, error)
 
 type TemporalWorkflow struct {
 	EnvPrefix string
@@ -65,8 +65,15 @@ func (t *TemporalWorkflow) Workflow(ctx workflow.Context, data *Variables) (map[
 	for _, task := range t.Tasks {
 		logger.Info("Running task", "name", task.Key)
 
-		if err := task.Task(ctx, vars, output); err != nil {
+		future, err := task.Task(ctx, vars, output)
+		if err != nil {
 			return nil, err
+		}
+
+		if future != nil {
+			if err := future.Output(output); err != nil {
+				return nil, err
+			}
 		}
 	}
 

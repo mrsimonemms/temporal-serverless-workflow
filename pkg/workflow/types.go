@@ -18,15 +18,51 @@ package workflow
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"github.com/serverlessworkflow/sdk-go/v3/parser"
+	"go.temporal.io/sdk/workflow"
 )
 
 type activities struct{}
+
+type Future struct {
+	ctx      workflow.Context
+	key      string
+	wfFuture workflow.Future
+	// Output   func(workflow.Future, map[string]OutputType) error
+}
+
+func (f *Future) Output(output map[string]OutputType) error {
+	logger := workflow.GetLogger(f.ctx)
+
+	var result any
+	if err := f.wfFuture.Get(f.ctx, &result); err != nil {
+		logger.Error("Error calling http task", "error", err)
+		return fmt.Errorf("error calling http task: %w", err)
+	}
+
+	maps.Copy(output, map[string]OutputType{
+		f.key: {
+			Type: CallHTTPResultType,
+			Data: result,
+		},
+	})
+
+	return nil
+}
+
+func NewFuture(ctx workflow.Context, key string, wfFuture workflow.Future) *Future {
+	return &Future{
+		ctx:      ctx,
+		key:      key,
+		wfFuture: wfFuture,
+	}
+}
 
 type Workflow struct {
 	data      []byte

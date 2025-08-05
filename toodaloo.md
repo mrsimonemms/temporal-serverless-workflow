@@ -4,4 +4,4 @@
 
 | File | Line Number | Author | Message |
 | --- | --- | --- | --- |
-| [pkg/workflow/callHTTP.go](pkg/workflow/callHTTP.go#L66) | 66 | Simon Emms <simon@simonemms.com> | configure the timeout |
+| [pkg/workflow/taskCallHTTP.go](pkg/workflow/taskCallHTTP.go#L67) | 67 | Simon Emms <simon@simonemms.com> | configure the timeout |

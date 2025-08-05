@@ -22,7 +22,7 @@ import (
 )
 
 func setTaskImpl(task *model.SetTask) TemporalWorkflowFunc {
-	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
+	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) (*Future, error) {
 		logger := workflow.GetLogger(ctx)
 
 		for k, v := range task.Set {
@@ -33,6 +33,6 @@ func setTaskImpl(task *model.SetTask) TemporalWorkflowFunc {
 			data.Data[ParseVariables(k, data)] = v
 		}
 
-		return nil
+		return nil, nil
 	}
 }
