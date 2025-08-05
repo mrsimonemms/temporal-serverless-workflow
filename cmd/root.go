@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/mrsimonemms/golang-helpers/temporal"
+	"github.com/mrsimonemms/temporal-serverless-workflow/internal/observability"
 	tsw "github.com/mrsimonemms/temporal-serverless-workflow/pkg/workflow"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -33,15 +34,18 @@ import (
 )
 
 var rootOpts struct {
-	EnvPrefix          string
-	FilePath           string
-	LogLevel           string
-	TaskQueue          string
-	TemporalAddress    string
-	TemporalAPIKey     string
-	TemporalTLSEnabled bool
-	TemporalNamespace  string
-	Validate           bool
+	EnvPrefix            string
+	FilePath             string
+	HealthListenAddress  string
+	LogLevel             string
+	MetricsListenAddress string
+	MetricsPrefix        string
+	TaskQueue            string
+	TemporalAddress      string
+	TemporalAPIKey       string
+	TemporalTLSEnabled   bool
+	TemporalNamespace    string
+	Validate             bool
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -77,6 +81,11 @@ var rootCmd = &cobra.Command{
 			creds = client.NewAPIKeyStaticCredentials(rootOpts.TemporalAPIKey)
 		}
 
+		metrics, err := observability.NewPrometheusHandler(rootOpts.MetricsListenAddress, rootOpts.MetricsPrefix)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error creating Prometheus metrics handler")
+		}
+
 		// The client and worker are heavyweight objects that should be created once per process.
 		c, err := client.Dial(client.Options{
 			ConnectionOptions: connectionOpts,
@@ -84,11 +93,15 @@ var rootCmd = &cobra.Command{
 			HostPort:          rootOpts.TemporalAddress,
 			Namespace:         rootOpts.TemporalNamespace,
 			Logger:            temporal.NewZerologHandler(&log.Logger),
+			MetricsHandler:    metrics,
 		})
 		if err != nil {
 			log.Fatal().Err(err).Msg("Unable to create client")
 		}
 		defer c.Close()
+
+		log.Debug().Msg("Starting health check service")
+		observability.NewHealthCheck(rootOpts.HealthListenAddress, c)
 
 		// Load the workflow file
 		wf, err := tsw.LoadFromFile(rootOpts.FilePath, rootOpts.EnvPrefix)
@@ -155,6 +168,14 @@ func init() {
 		"Load envvars with this prefix to the workflow",
 	)
 
+	viper.SetDefault("health_listen_address", "0.0.0.0:3000")
+	rootCmd.Flags().StringVar(
+		&rootOpts.HealthListenAddress,
+		"health-listen-address",
+		viper.GetString("health_listen_address"),
+		"Address of health server",
+	)
+
 	viper.SetDefault("log_level", zerolog.InfoLevel.String())
 	rootCmd.PersistentFlags().StringVarP(
 		&rootOpts.LogLevel,
@@ -162,6 +183,21 @@ func init() {
 		"l",
 		viper.GetString("log_level"),
 		fmt.Sprintf("log level: %s", "Set log level"),
+	)
+
+	viper.SetDefault("metrics_listen_address", "0.0.0.0:9090")
+	rootCmd.Flags().StringVar(
+		&rootOpts.MetricsListenAddress,
+		"metrics-listen-address",
+		viper.GetString("metrics_listen_address"),
+		"Address of Prometheus metrics server",
+	)
+
+	rootCmd.Flags().StringVar(
+		&rootOpts.MetricsPrefix,
+		"metrics-prefix",
+		viper.GetString("metrics_prefix"),
+		"Prefix for metrics",
 	)
 
 	viper.SetDefault("task_queue", "serverless-workflow")
