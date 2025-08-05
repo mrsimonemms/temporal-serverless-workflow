@@ -101,6 +101,8 @@ github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zx
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/mrsimonemms/golang-helpers v0.3.0 h1:QFRpv+JhpwubGbPOrY37M17PfGghwGH37WG0seoB5Ws=
 github.com/mrsimonemms/golang-helpers v0.3.0/go.mod h1:FdHlX4yYmPStMhISoAnObvUrFHawEFElg1EdSXJwZ+A=
+github.com/mrsimonemms/temporal-codec-server/packages/golang v0.0.0-20250721093535-c8763745b255 h1:HPm58xrSnlXoeIwxfspe0HAg+EhuOIlLz6Z2Olllv+Y=
+github.com/mrsimonemms/temporal-codec-server/packages/golang v0.0.0-20250721093535-c8763745b255/go.mod h1:40YVSeXGPjqs4mCjqHJ/6sAl8iF1ZgEvdNW3suB0xtE=
 github.com/nexus-rpc/sdk-go v0.4.0 h1:A/IjWWAiWecnYnt7uI0Cw6ci6zJwaM9Ma3q4hDDxUVc=
 github.com/nexus-rpc/sdk-go v0.4.0/go.mod h1:TpfkM2Cw0Rlk9drGkoiSMpFqflKTiQLWUNyKJjF8mKQ=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=

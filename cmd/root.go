@@ -22,17 +22,21 @@ import (
 	"strings"
 
 	"github.com/mrsimonemms/golang-helpers/temporal"
+	"github.com/mrsimonemms/temporal-codec-server/packages/golang/algorithms/aes"
 	tsw "github.com/mrsimonemms/temporal-serverless-workflow/pkg/workflow"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/converter"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 )
 
 var rootOpts struct {
+	ConvertData        bool
+	ConvertKeyPath     string
 	EnvPrefix          string
 	FilePath           string
 	LogLevel           string
@@ -79,12 +83,22 @@ var rootCmd = &cobra.Command{
 			creds = client.NewAPIKeyStaticCredentials(rootOpts.TemporalAPIKey)
 		}
 
+		var converter converter.DataConverter
+		if rootOpts.ConvertData {
+			keys, err := aes.ReadKeyFile(rootOpts.ConvertKeyPath)
+			if err != nil {
+				log.Fatal().Err(err).Str("keypath", rootOpts.ConvertKeyPath).Msg("Unable to get keys from file")
+			}
+			converter = aes.DataConverter(keys)
+		}
+
 		// The client and worker are heavyweight objects that should be created once per process.
 		c, err := client.Dial(client.Options{
 			ConnectionOptions: connectionOpts,
 			Credentials:       creds,
 			HostPort:          rootOpts.TemporalAddress,
 			Namespace:         rootOpts.TemporalNamespace,
+			DataConverter:     converter,
 			Logger:            temporal.NewZerologHandler(&log.Logger),
 		})
 		if err != nil {
@@ -140,6 +154,21 @@ func Execute() {
 
 func init() {
 	viper.AutomaticEnv()
+
+	rootCmd.Flags().BoolVar(
+		&rootOpts.ConvertData,
+		"convert-data",
+		viper.GetBool("convert_data"),
+		"Enable AES data conversion",
+	)
+
+	viper.SetDefault("converter_key_path", "keys.yaml")
+	rootCmd.Flags().StringVar(
+		&rootOpts.ConvertKeyPath,
+		"converter-key-path",
+		viper.GetString("converter_key_path"),
+		"Path to AES conversion keys",
+	)
 
 	rootCmd.Flags().StringVarP(
 		&rootOpts.FilePath,
