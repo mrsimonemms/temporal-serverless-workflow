@@ -19,6 +19,7 @@ package workflow
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"maps"
@@ -32,12 +33,12 @@ import (
 )
 
 type CallHTTPResult struct {
-	Body       string      `json:"body"`
-	Headers    http.Header `json:"headers"`
-	Method     string      `json:"method"`
-	Status     string      `json:"status"`
-	StatusCode int         `json:"statusCode"`
-	URL        string      `json:"url"`
+	Body       string         `json:"body,omitempty"`
+	BodyJSON   map[string]any `json:"bodyJSON,omitempty"`
+	Method     string         `json:"method"`
+	Status     string         `json:"status"`
+	StatusCode int            `json:"statusCode"`
+	URL        string         `json:"url"`
 }
 
 func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, vars *Variables) (*CallHTTPResult, error) {
@@ -88,9 +89,18 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, var
 		return nil, fmt.Errorf("error reading http body: %w", err)
 	}
 
+	// Try converting the body as JSON, returning as string if not possible
+	var bodyJSON map[string]any
+	var bodyStr string
+	if err := json.Unmarshal(bodyRes, &bodyJSON); err != nil {
+		// Log error
+		logger.Debug("Error converting body to JSON", "error", err)
+		bodyStr = string(bodyRes)
+	}
+
 	return &CallHTTPResult{
-		Body:       string(bodyRes),
-		Headers:    resp.Header,
+		Body:       bodyStr,
+		BodyJSON:   bodyJSON,
 		Method:     method,
 		Status:     resp.Status,
 		StatusCode: resp.StatusCode,

@@ -20,6 +20,7 @@
     "GIT_REPO": "github.com/mrsimonemms/temporal-serverless-workflow",
     "LOG_LEVEL": "trace",
     "TEMPORAL_ADDRESS": "localhost:7233",
+    "TSW_EXAMPLE_ENVVAR": "some-example-envvar",
     "WORKFLOW_FILE": "./workflow.example.yaml"
   },
   "forwardPorts": [
