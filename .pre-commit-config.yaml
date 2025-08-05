@@ -18,6 +18,7 @@ repos:
           - --no-sort-keys
       - id: check-json
       - id: check-yaml
+        exclude: charts
         args:
           - --allow-multiple-documents
       - id: end-of-file-fixer
@@ -44,3 +45,12 @@ repos:
     rev: v0.2.4
     hooks:
       - id: scan
+  - repo: https://github.com/norwoodj/helm-docs
+    rev: v1.13.1
+    hooks:
+      - id: helm-docs-built
+  - repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.29
+    hooks:
+      - id: helmlint
+exclude: charts/.*/README.md
