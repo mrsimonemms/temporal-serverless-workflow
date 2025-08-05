@@ -1,10 +1,13 @@
 module github.com/mrsimonemms/temporal-serverless-workflow
 
-go 1.24.2
+go 1.24.3
+
+toolchain go1.24.6
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/mrsimonemms/golang-helpers v0.3.0
+	github.com/mrsimonemms/temporal-codec-server/packages/golang v0.0.0-20250721093535-c8763745b255
 	github.com/rs/zerolog v1.34.0
 	github.com/serverlessworkflow/sdk-go/v3 v3.1.0
 	github.com/spf13/cobra v1.9.1
