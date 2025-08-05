@@ -13,7 +13,7 @@ timeout:
 do:
   - step1:
       set:
-        userId: 2
+        # Set a variable from an envvar
         envvar: "{{ .TSW_EXAMPLE_ENVVAR }}"
   - wait:
       wait:

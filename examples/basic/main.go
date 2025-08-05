@@ -41,7 +41,11 @@ func main() {
 	}
 
 	ctx := context.Background()
-	we, err := c.ExecuteWorkflow(ctx, workflowOptions, "example")
+	we, err := c.ExecuteWorkflow(ctx, workflowOptions, "example", workflow.Variables{
+		Data: map[string]any{
+			"userId": 3,
+		},
+	})
 	if err != nil {
 		//nolint:gocritic
 		log.Fatal().Err(err).Msg("Error executing workflow")

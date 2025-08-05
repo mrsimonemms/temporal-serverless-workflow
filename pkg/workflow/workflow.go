@@ -18,6 +18,7 @@ package workflow
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"strings"
 	"time"
@@ -40,7 +41,7 @@ type TemporalWorkflow struct {
 	Tasks     []TemporalWorkflowTask
 }
 
-func (t *TemporalWorkflow) Workflow(ctx workflow.Context, data *Variables) (map[string]OutputType, error) {
+func (t *TemporalWorkflow) Workflow(ctx workflow.Context, input Variables) (map[string]OutputType, error) {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("Running workflow")
 
@@ -52,6 +53,7 @@ func (t *TemporalWorkflow) Workflow(ctx workflow.Context, data *Variables) (map[
 	vars := &Variables{
 		Data: make(map[string]any),
 	}
+	maps.Copy(vars.Data, input.Data)
 	output := map[string]OutputType{}
 
 	// Load in any envvars with the prefix
