@@ -17,6 +17,7 @@
     "install-air": "go install github.com/air-verse/air@latest"
   },
   "containerEnv": {
+    "CONVERTER_KEY_PATH": "/workspaces/temporal-serverless-workflow/keys.example.yaml",
     "GIT_REPO": "github.com/mrsimonemms/temporal-serverless-workflow",
     "LOG_LEVEL": "trace",
     "TEMPORAL_ADDRESS": "localhost:7233",

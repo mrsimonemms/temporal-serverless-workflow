@@ -1,0 +1,6 @@
+# The key in position 0 is the key used for encryption
+- id: key0
+  key: passphrasewhichneedstobe32bytes!
+# Any later keys are old keys used only for decryption
+- id: key1
+  key: anoldpassphraseinourhistory!!!!!
