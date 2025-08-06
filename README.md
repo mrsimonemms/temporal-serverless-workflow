@@ -7,7 +7,7 @@ Build [Temporal](https://temporal.io) workflows with [Serverless Workflow](https
 
 <!-- toc -->
 
-* [Look](#look)
+* [Loom](#loom)
 * [Why?](#why)
 * [Architecture](#architecture)
   * [Goals](#goals)
@@ -27,7 +27,7 @@ Build [Temporal](https://temporal.io) workflows with [Serverless Workflow](https
 
 <!-- tocstop -->
 
-## Look
+## Loom
 
 Here's a Loom video explaining the idea
 
