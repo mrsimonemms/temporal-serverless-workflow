@@ -15,6 +15,7 @@ Build [Temporal](https://temporal.io) workflows with [Serverless Workflow](https
   * [Define your workflow](#define-your-workflow)
   * [Start your Temporal server](#start-your-temporal-server)
   * [Run](#run)
+    * [Running examples](#running-examples)
 * [Schema](#schema)
   * [Variables](#variables)
 * [Future developments](#future-developments)
@@ -99,6 +100,10 @@ go run . --temporal-address localhost:7233 --files ./workflow.example.yaml
 ```
 
 It's now ready for all your workflow needs
+
+#### Running examples
+
+See [examples](./examples) directory
 
 ## Schema
 

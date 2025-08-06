@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+EXAMPLES = ./examples
+
 cruft-update:
 ifeq (,$(wildcard .cruft.json))
 	@echo "Cruft not configured"
@@ -19,3 +21,13 @@ else
 	@cruft check || cruft update --skip-apply-ask --refresh-private-variables
 endif
 .PHONY: cruft-update
+
+start:
+	$(shell if [ -z "${NAME}" ]; then echo "NAME must be set"; exit 1; fi)
+	go run ./examples/${NAME}
+.PHONY: start
+
+worker:
+	$(shell if [ -z "${NAME}" ]; then echo "NAME must be set"; exit 1; fi)
+	go run . -f ./examples/${NAME}/workflow.yaml
+.PHONY: worker

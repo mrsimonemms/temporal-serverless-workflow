@@ -41,7 +41,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	we, err := c.ExecuteWorkflow(ctx, workflowOptions, "example", workflow.Variables{
+	we, err := c.ExecuteWorkflow(ctx, workflowOptions, "basic", workflow.Variables{
 		Data: map[string]any{
 			"userId": 3,
 		},
