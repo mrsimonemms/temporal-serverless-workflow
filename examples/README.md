@@ -5,6 +5,9 @@ A collection of examples
 <!-- toc -->
 
 * [Applications](#applications)
+* [Running](#running)
+  * [Running the worker](#running-the-worker)
+  * [Starting the workflow](#starting-the-workflow)
 
 <!-- Regenerate with "pre-commit run -a markdown-toc" -->
 
@@ -15,3 +18,21 @@ A collection of examples
 | Name | Description |
 | --- | --- |
 | [Basic](./basic/) | A basic application to show the concepts |
+
+## Running
+
+> These commands should be run from the root directory
+
+The `NAME` variable should be set to the example you wish to run (eg, `basic`)
+
+### Running the worker
+
+```sh
+make worker NAME=<example>
+```
+
+### Starting the workflow
+
+```sh
+make start NAME=<example>
+```
