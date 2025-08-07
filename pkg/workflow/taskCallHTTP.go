@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"go.temporal.io/sdk/activity"
+	tmpl "go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -98,7 +100,27 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, var
 		bodyStr = string(bodyRes)
 	}
 
-	// @todo(sje): decide how to handle a non-2xx response
+	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+		// Error on our side - treat as non-retryable error as we need to fix it
+		logger.Error("CallHTTP returned 4xx error")
+
+		return nil, tmpl.NewNonRetryableApplicationError("CallHTTP returned 4xx error", string(CallHTTPErr), errors.New(resp.Status), HTTPData{
+			"status": resp.StatusCode,
+			"body":   bodyStr,
+			"json":   bodyJSON,
+		})
+	}
+
+	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+		// Error on their side - treat as retryable error as we can't fix it
+		logger.Error("CallHTTP returned 5xx error")
+
+		return nil, tmpl.NewApplicationError("CallHTTP returned 5xx error", string(CallHTTPErr), errors.New(resp.Status), HTTPData{
+			"status": resp.StatusCode,
+			"body":   bodyStr,
+			"json":   bodyJSON,
+		})
+	}
 
 	return &CallHTTPResult{
 		Body:       bodyStr,

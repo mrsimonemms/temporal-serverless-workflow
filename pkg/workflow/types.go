@@ -39,8 +39,10 @@ type OutputType struct {
 	Data any        `json:"data"`
 }
 
+type HTTPData map[string]any
+
 type Variables struct {
-	Data map[string]any `json:"data"`
+	Data HTTPData `json:"data"`
 }
 
 func (w *Workflow) Activities() *activities {
