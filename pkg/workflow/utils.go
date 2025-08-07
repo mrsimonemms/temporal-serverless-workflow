@@ -23,6 +23,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 )
 
@@ -34,11 +35,15 @@ func GenerateChildWorkflowName(prefix string, prefixes ...string) string {
 
 // Parses a string with variables
 func ParseVariables(input string, data *Variables) string {
-	t := template.Must(template.New("values").Parse(input))
+	t := template.Must(
+		template.New("values").
+			Funcs(sprig.FuncMap()).
+			Parse(input),
+	)
 
 	buf := new(bytes.Buffer)
 	if err := t.Execute(buf, data.Data); err != nil {
-		panic(err)
+		panic(fmt.Errorf("error executing template: %w", err))
 	}
 
 	return buf.String()
