@@ -18,7 +18,14 @@ package workflow
 
 import "time"
 
-type ResultType string
+type (
+	ErrType    string
+	ResultType string
+)
+
+const (
+	CallHTTPErr ErrType = "CallHTTP error"
+)
 
 const (
 	CallHTTPResultType ResultType = "CallHTTP"
