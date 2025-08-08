@@ -1,0 +1,18 @@
+document:
+  dsl: 1.0.0
+  namespace: default
+  name: listen
+  version: 0.0.1
+  title: Serverless Workflow
+  summary: Listen for events
+do:
+  - callDoctor:
+      listen:
+        to:
+          all:
+            - with:
+                id: com.fake-hospital.vitals.measurements.temperature
+                data: ${ .temperature > 38 }
+            - with:
+                id: com.fake-hospital.vitals.measurements.bpm
+                data: ${ .bpm < 60 or .bpm > 100 }

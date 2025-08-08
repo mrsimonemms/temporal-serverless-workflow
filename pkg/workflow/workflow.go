@@ -104,13 +104,15 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 		existingKeys = append(existingKeys, item.Key)
 
 		if fork := item.AsForkTask(); fork != nil {
-			if task, err = forkTaskImpl(fork, item, w); err != nil {
-				return nil, err
-			}
+			task, err = forkTaskImpl(fork, item, w)
 		}
 
 		if http := item.AsCallHTTPTask(); http != nil {
 			task = httpTaskImpl(http, item.Key)
+		}
+
+		if listen := item.AsListenTask(); listen != nil {
+			task, err = listenTaskImpl(listen, item.Key)
 		}
 
 		if set := item.AsSetTask(); set != nil {
@@ -119,6 +121,10 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 
 		if wait := item.AsWaitTask(); wait != nil {
 			task = waitTaskImpl(wait)
+		}
+
+		if err != nil {
+			return nil, err
 		}
 
 		wf.Tasks = append(wf.Tasks, TemporalWorkflowTask{

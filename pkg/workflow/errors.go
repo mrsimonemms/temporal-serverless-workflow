@@ -20,6 +20,7 @@ import "fmt"
 
 var (
 	ErrDuplicateKey    = fmt.Errorf("duplicate key found")
+	ErrUnsetListenTask = fmt.Errorf("listen task id is not set")
 	ErrUnsupportedTask = fmt.Errorf("task not supported")
 	ErrUnsupportedDSL  = fmt.Errorf("unsupported dsl")
 )
