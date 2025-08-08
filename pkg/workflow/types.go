@@ -66,9 +66,6 @@ func (w *Workflow) Validate() error {
 		if grpc := task.AsCallGRPCTask(); grpc != nil {
 			return fmt.Errorf("%w: grpc", ErrUnsupportedTask)
 		}
-		if listen := task.AsListenTask(); listen != nil {
-			return fmt.Errorf("%w: listen", ErrUnsupportedTask)
-		}
 		if openapi := task.AsCallOpenAPITask(); openapi != nil {
 			return fmt.Errorf("%w: openapi", ErrUnsupportedTask)
 		}

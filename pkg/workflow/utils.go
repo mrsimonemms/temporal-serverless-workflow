@@ -49,6 +49,15 @@ func ParseVariables(input string, data *Variables) string {
 	return buf.String()
 }
 
+func SlicesEqual[T comparable](s []T, v T) bool {
+	for _, r := range s {
+		if r != v {
+			return false
+		}
+	}
+	return true
+}
+
 // Converts the SW duration to a time Duration
 func ToDuration(v *model.Duration) time.Duration {
 	inline := v.AsInline()
