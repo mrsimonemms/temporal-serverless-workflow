@@ -1,7 +1,7 @@
 # Temporal Serverless Workflow
 
 <!-- markdownlint-disable-next-line MD013 MD034 -->
-[![Go Report Card](https://goreportcard.com/badge/github.com/mrsimonemms/temporal-serverless-workflow)](https://goreportcard.com/report/github.com/mrsimonemms/temporal-serverless-workflow)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mrsimonemms/temporal-serverless-workflow?cache-control=no-cache)](https://goreportcard.com/report/github.com/mrsimonemms/temporal-serverless-workflow)
 
 Build [Temporal](https://temporal.io) workflows with [Serverless Workflow](https://serverlessworkflow.io)
 
