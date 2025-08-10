@@ -18,8 +18,11 @@ package workflow
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
+	"go.temporal.io/api/enums/v1"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -150,8 +153,12 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 			}
 		}
 
-		logger.Debug("Listening for updates")
-		if err := workflow.Await(ctx, func() bool {
+		// @todo(sje): figure out a way of customising the timeout
+		timeout := time.Hour
+
+		logger.Debug("Listening for updates", "timeout", timeout)
+		if ok, err := workflow.AwaitWithTimeout(ctx, timeout, func() bool {
+			// Calculate if the task if finished
 			if isAll {
 				logger.Debug("Waiting for listener(s) to complete", "complete", isAllComplete)
 				return SlicesEqual(isAllComplete, true)
@@ -162,6 +169,9 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 		}); err != nil {
 			logger.Error("Error waiting", "error", err)
 			return fmt.Errorf("error waiting: %w", err)
+		} else if !ok {
+			logger.Warn("Await timeout")
+			return temporal.NewTimeoutError(*enums.TIMEOUT_TYPE_SCHEDULE_TO_START.Enum(), nil)
 		}
 
 		return nil

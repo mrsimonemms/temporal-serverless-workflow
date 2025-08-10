@@ -136,7 +136,7 @@ The table below lists the current state of this implementation. This table is a
 roadmap for the project based on the
 [DSL Reference doc](https://github.com/serverlessworkflow/specification/blob/v1.0.0/dsl-reference.md).
 
-This project currently only support DSL `1.0.0`.
+This project currently only supports DSL `1.0.0`.
 
 | Feature | State |
 | --- | --- |
@@ -148,7 +148,7 @@ This project currently only support DSL `1.0.0`.
 | Task Emit | ❌ |
 | Task For | ❌ |
 | Task Fork | 🟡 |
-| Task Listen | ❌ |
+| Task Listen | 🟡 |
 | Task Raise | ❌ |
 | Task Run | ❌ |
 | Task Set | ✅ |
