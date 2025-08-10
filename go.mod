@@ -9,6 +9,7 @@ require (
 	github.com/serverlessworkflow/sdk-go/v3 v3.1.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
+	go.temporal.io/api v1.51.0
 	go.temporal.io/sdk v1.35.0
 )
 
@@ -57,7 +58,6 @@ require (
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
-	go.temporal.io/api v1.51.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
