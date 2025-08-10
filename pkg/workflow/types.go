@@ -18,6 +18,7 @@ package workflow
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,6 +44,14 @@ type HTTPData map[string]any
 
 type Variables struct {
 	Data HTTPData `json:"data"`
+}
+
+func (a *Variables) AddData(d HTTPData) {
+	if a.Data == nil {
+		a.Data = make(HTTPData)
+	}
+
+	maps.Copy(a.Data, d)
 }
 
 func (w *Workflow) Activities() *activities {

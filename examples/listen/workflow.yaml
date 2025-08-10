@@ -11,8 +11,11 @@ do:
         to:
           all:
             - with:
+                # ID maps to the update name in Temporal
                 id: com.fake-hospital.vitals.measurements.temperature
-                data: ${ .temperature > 38 }
+                # Conditionally accept - numbers are sent as float64 so we need to add ".0" as a float
+                if: "{{ gt .temperature 38.0 }}"
             - with:
                 id: com.fake-hospital.vitals.measurements.bpm
-                data: ${ .bpm < 60 or .bpm > 100 }
+                # You can pass in multiple params
+                if: "{{ or (lt .bpm 60.0) (gt .bpm 100.0) }}"

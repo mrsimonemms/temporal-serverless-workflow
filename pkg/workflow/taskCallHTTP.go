@@ -47,9 +47,9 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, var
 	logger := activity.GetLogger(ctx)
 	logger.Debug("Running call HTTP activity")
 
-	body := bytes.NewBufferString(ParseVariables(bytes.NewBuffer(callHttp.With.Body).String(), vars))
-	method := strings.ToUpper(ParseVariables(callHttp.With.Method, vars))
-	url := ParseVariables(callHttp.With.Endpoint.String(), vars)
+	body := bytes.NewBufferString(MustParseVariables(bytes.NewBuffer(callHttp.With.Body).String(), vars))
+	method := strings.ToUpper(MustParseVariables(callHttp.With.Method, vars))
+	url := MustParseVariables(callHttp.With.Endpoint.String(), vars)
 
 	logger.Debug("Making HTTP call", "method", method, "url", url)
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
@@ -59,12 +59,12 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, var
 	}
 
 	for k, v := range callHttp.With.Headers {
-		req.Header.Add(k, ParseVariables(v, vars))
+		req.Header.Add(k, MustParseVariables(v, vars))
 	}
 
 	q := req.URL.Query()
 	for k, v := range callHttp.With.Query {
-		q.Add(k, ParseVariables(v.(string), vars))
+		q.Add(k, MustParseVariables(v.(string), vars))
 	}
 	req.URL.RawQuery = q.Encode()
 
