@@ -28,9 +28,9 @@ func setTaskImpl(task *model.SetTask) TemporalWorkflowFunc {
 		for k, v := range task.Set {
 			if s, ok := v.(string); ok {
 				logger.Debug("Parsing value as string", "key", k)
-				v = ParseVariables(s, data)
+				v = MustParseVariables(s, data)
 			}
-			data.Data[ParseVariables(k, data)] = v
+			data.Data[MustParseVariables(k, data)] = v
 		}
 
 		return nil

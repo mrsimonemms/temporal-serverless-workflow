@@ -62,7 +62,7 @@ func main() {
 		UpdateName:   "com.fake-hospital.vitals.measurements.temperature",
 		Args: []any{
 			workflow.HTTPData{
-				"hello": "world",
+				"temperature": 39,
 			},
 		},
 	})
@@ -83,7 +83,7 @@ func main() {
 		UpdateName:   "com.fake-hospital.vitals.measurements.bpm",
 		Args: []any{
 			map[string]any{
-				"hello": "world",
+				"bpm": 130,
 			},
 		},
 	})

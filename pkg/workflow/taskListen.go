@@ -23,6 +23,12 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
+type TaskListenResponse struct {
+	Conditional   string `json:"conditional,omitempty"`
+	EventComplete bool   `json:"eventComplete"`
+	TaskComplete  bool   `json:"taskComplete"`
+}
+
 func validateEventFilter(event *model.EventFilter) error {
 	if event.With.ID == "" {
 		return ErrUnsetListenTask
@@ -86,20 +92,59 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 				isAllComplete = append(isAllComplete, false)
 			}
 
-			if err := workflow.SetUpdateHandler(ctx, event.With.ID, func(ctx workflow.Context, args HTTPData) error {
-				fmt.Println("===")
-				fmt.Printf("%+v\n", args)
-				fmt.Println("===")
+			if err := workflow.SetUpdateHandlerWithOptions(
+				ctx,
+				event.With.ID,
+				func(ctx workflow.Context, args HTTPData) (*TaskListenResponse, error) {
+					// This is designed to give some debug information to the developer
+					resp := &TaskListenResponse{}
 
-				logger.Debug("Listen event received", "event", event.With.ID)
-				if isAll {
-					isAllComplete[i] = true
-				} else {
-					isAnyComplete = true
-				}
+					if statement, ok := event.With.Additional["if"]; ok {
+						// Parse a conditional - only accept the update if it resolves to "true"
+						conditional := MustParseVariables(statement.(string), data)
 
-				return nil
-			}); err != nil {
+						if conditional != "true" {
+							logger.Debug(
+								"Conditional event received and resolved to false",
+								"event", event.With.ID,
+								"conditional", conditional,
+								"statement", statement,
+							)
+							resp.Conditional = conditional
+							return resp, nil
+						}
+					}
+
+					logger.Debug("Listen event received", "event", event.With.ID)
+					if isAll {
+						isAllComplete[i] = true
+					} else {
+						isAnyComplete = true
+					}
+
+					resp.EventComplete = true
+
+					return resp, nil
+				},
+				workflow.UpdateHandlerOptions{
+					Validator: func(ctx workflow.Context, args HTTPData) error {
+						data.AddData(args)
+
+						if d, ok := event.With.Additional["if"]; ok {
+							if s, ok := d.(string); !ok {
+								return fmt.Errorf("if is not a string: %+v", d)
+							} else {
+								if _, err := ParseVariables(s, data); err != nil {
+									logger.Error("cannot parse data", "error", err)
+									return fmt.Errorf("cannot parse data: %w", err)
+								}
+							}
+						}
+
+						return nil
+					},
+				},
+			); err != nil {
 				logger.Error("Error setting update", "id", event.With.ID, "error", err)
 				return fmt.Errorf("error setting update: %w", err)
 			}

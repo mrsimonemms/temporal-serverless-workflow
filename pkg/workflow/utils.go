@@ -34,7 +34,7 @@ func GenerateChildWorkflowName(prefix string, prefixes ...string) string {
 }
 
 // Parses a string with variables
-func ParseVariables(input string, data *Variables) string {
+func ParseVariables(input string, data *Variables) (string, error) {
 	t := template.Must(
 		template.New("values").
 			Funcs(sprig.FuncMap()).
@@ -43,10 +43,19 @@ func ParseVariables(input string, data *Variables) string {
 
 	buf := new(bytes.Buffer)
 	if err := t.Execute(buf, data.Data); err != nil {
-		panic(fmt.Errorf("error executing template: %w", err))
+		return "", fmt.Errorf("error executing template: %w", err)
 	}
 
-	return buf.String()
+	return buf.String(), nil
+}
+
+func MustParseVariables(input string, data *Variables) string {
+	str, err := ParseVariables(input, data)
+	if err != nil {
+		panic(err)
+	}
+
+	return str
 }
 
 func SlicesEqual[T comparable](s []T, v T) bool {
