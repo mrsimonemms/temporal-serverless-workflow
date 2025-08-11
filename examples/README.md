@@ -18,6 +18,7 @@ A collection of examples
 | Name | Description |
 | --- | --- |
 | [Basic](./basic/) | A basic application to show the concepts |
+| [Multiple Workflows](./multiple-workflows/) | Configure multiple workflows |
 | [Listen](./listen/) | Configure listeners |
 
 ## Running

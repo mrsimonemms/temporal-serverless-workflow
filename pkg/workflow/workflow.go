@@ -98,6 +98,7 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 		var task TemporalWorkflowFunc
 		var taskType string
 		var err error
+		var additionalWorkflows []*TemporalWorkflow
 
 		// Check for duplicate keys
 		if _, found := slices.BinarySearch(existingKeys, item.Key); found {
@@ -105,14 +106,20 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 		}
 		existingKeys = append(existingKeys, item.Key)
 
-		if fork := item.AsForkTask(); fork != nil {
-			task, err = forkTaskImpl(fork, item, w)
-			taskType = "ForkTask"
-		}
-
 		if http := item.AsCallHTTPTask(); http != nil {
 			task = httpTaskImpl(http, item.Key)
 			taskType = "CallHTTP"
+		}
+
+		if do := item.AsDoTask(); do != nil {
+			additionalWorkflows, err = doTaskImpl(do, item, w)
+			taskType = "DoTask"
+			wfs = append(wfs, additionalWorkflows...)
+		}
+
+		if fork := item.AsForkTask(); fork != nil {
+			task, err = forkTaskImpl(fork, item, w)
+			taskType = "ForkTask"
 		}
 
 		if listen := item.AsListenTask(); listen != nil {
@@ -140,10 +147,12 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 			log.Warn().Str("key", item.Key).Msg("Task detected, but no taskType set")
 		}
 
-		wf.Tasks = append(wf.Tasks, TemporalWorkflowTask{
-			Key:  item.Key,
-			Task: task,
-		})
+		if task != nil {
+			wf.Tasks = append(wf.Tasks, TemporalWorkflowTask{
+				Key:  item.Key,
+				Task: task,
+			})
+		}
 	}
 
 	// Add to the list of workflows
