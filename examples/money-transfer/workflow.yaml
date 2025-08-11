@@ -1,0 +1,118 @@
+# This is a simple Serverless Workflow that will be
+# translated into a Temporal workflow
+document:
+  dsl: 1.0.0
+  namespace: ignored # Ignored by Temporal
+  name: money-transfer # Workflow name
+  version: 0.0.1
+  title: Money Transfer Demo
+  summary: Temporal's world-famous Money Transfer Demo, in Serverless Workflow form
+timeout:
+  after:
+    minutes: 1
+do:
+  # Happy path
+  - AccountTransferWorkflow:
+      do:
+        - queryState:
+            listen:
+              to:
+                one:
+                  with:
+                    # ID maps to the query name in Temporal
+                    id: transferStatus
+                    # Temporal update - used to make read/write request
+                    type: query
+                    # Convert the data to JSON - in Temporal, this gets converted to map[string]all so it gets serialized correctly
+                    datacontenttype: application/json
+                    # The data returned from the query - for application/json, this must be a string so Go interpolation works correctly
+                    data: |
+                      approvalTime: {{ .stateApprovalTime }}
+                      chargeResult:
+                        chargeId: {{ .stateChargeId }}
+                      progressPercentage: {{ .stateProgressPercentage }}
+                      transferState: {{ .stateTransferState }}
+                      workflowStatus: {{ .stateWorkflowStatus }}
+        - setup:
+            set:
+              idempotencyKey: "{{ uuidv4 }}"
+              stateApprovalTime: 30
+              stateChargeId: "{{ uuidv4 }}" # @todo(sje): replace with generated value
+              stateProgressPercentage: 0
+              stateTransferState: starting
+              stateWorkflowStatus: ""
+        - validate:
+            call: http
+            with:
+              method: post
+              endpoint: http://server:3000/validate
+        - updateState:
+            set:
+              stateProgressPercentage: 25
+              stateTransferState: running
+        - sleep:
+            wait:
+              seconds: 1
+        - withdraw:
+            call: http
+            with:
+              method: post
+              endpoint: http://server:3000/withdraw
+              headers:
+                content-type: application/json
+              # Send some JSON over
+              body: >
+                {
+                  "amount": {{ .amount }},
+                  "attempt": {{ ._ta_attempt }},
+                  "idempotencyKey": {{ .idempotencyKey | quote }},
+                  "name": {{ ._tw_workflow_type_name | quote }}
+                }
+        - updateState:
+            set:
+              stateProgressPercentage: 50
+        - sleep:
+            wait:
+              seconds: 3
+        - deposit:
+            call: http
+            with:
+              method: post
+              endpoint: http://server:3000/deposit
+              headers:
+                content-type: application/json
+              # Send some JSON over
+              body: >
+                {
+                  "amount": {{ .amount }},
+                  "attempt": {{ ._ta_attempt }},
+                  "idempotencyKey": {{ .idempotencyKey | quote }},
+                  "name": {{ ._tw_workflow_type_name | quote }}
+                }
+        - updateState:
+            set:
+              stateProgressPercentage: 75
+        - sleep:
+            wait:
+              seconds: 1
+        - sendNotification:
+            call: http
+            with:
+              method: post
+              endpoint: http://server:3000/notify
+              headers:
+                content-type: application/json
+              # Send some JSON over
+              body: >
+                {
+                  "amount": {{ .amount }},
+                  "fromAccount": {{ .fromAccount | quote }},
+                  "toAccount": {{ .toAccount | quote }}
+                }
+        - updateState:
+            set:
+              stateProgressPercentage: 100
+              stateTransferState: finished
+        - sleep:
+            wait:
+              seconds: 1

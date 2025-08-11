@@ -1,0 +1,43 @@
+include:
+  - oci://ghcr.io/mrsimonemms/temporal-demos/temporal-compose
+
+services:
+  server:
+    build:
+      context: ./server
+    volumes:
+      - ./server:/go/app
+    ports:
+      - 3000:3000
+
+  workflow:
+    build:
+      context: ../../
+      target: builder
+    environment:
+      TASK_QUEUE: MoneyTransfer
+      TEMPORAL_ADDRESS: temporal:7233
+      WORKFLOW_FILE: ./examples/money-transfer/workflow.yaml
+    volumes:
+      - ../../:/go/app
+    links:
+      - server
+      - temporal
+    depends_on:
+      temporal:
+        condition: service_healthy
+      temporal-ui:
+        condition: service_started
+      # UI isn't actually linked, but allows us to run docker compose up workflow
+      ui:
+        condition: service_started
+
+  ui:
+    image: ghcr.io/temporal-sa/money-transfer-demo/ui
+    links:
+      - temporal
+    depends_on:
+      temporal:
+        condition: service_healthy
+    ports:
+      - 7070:7070
