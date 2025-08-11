@@ -15,6 +15,7 @@ do:
       set:
         # Set a variable from an envvar
         envvar: "{{ .TSW_EXAMPLE_ENVVAR }}"
+        uuid: "{{ uuidv4 }}"
   - wait:
       wait:
         seconds: 5
