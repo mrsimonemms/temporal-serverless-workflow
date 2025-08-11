@@ -1,0 +1,33 @@
+# This is a simple Serverless Workflow that will be
+# translated into a Temporal workflow
+document:
+  dsl: 1.0.0
+  namespace: ignored # Ignored by Temporal
+  name: multiple # Workflow name
+  version: 0.0.1
+  title: Serverless Workflow
+  summary: Configure multiple Temporal workflows
+timeout:
+  after:
+    minutes: 1
+do:
+  - workflow1:
+      do:
+        - wait:
+            wait:
+              seconds: 5
+        - getUser:
+            call: http
+            with:
+              method: get
+              endpoint: https://jsonplaceholder.typicode.com/users/{{ .userId }}
+  - workflow2:
+      do:
+        - wait:
+            wait:
+              seconds: 10
+        - getUser:
+            call: http
+            with:
+              method: get
+              endpoint: https://jsonplaceholder.typicode.com/users/{{ .userId }}
