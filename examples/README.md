@@ -20,6 +20,7 @@ A collection of examples
 | [Basic](./basic/) | A basic application to show the concepts |
 | [Multiple Workflows](./multiple-workflows/) | Configure multiple workflows |
 | [Listen](./listen/) | Configure listeners |
+| [Query](./query/) | Configure query listener |
 
 ## Running
 
