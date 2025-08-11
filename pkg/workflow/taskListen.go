@@ -18,6 +18,7 @@ package workflow
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
@@ -32,11 +33,61 @@ type TaskListenResponse struct {
 	TaskComplete  bool   `json:"taskComplete"`
 }
 
-func validateEventFilter(event *model.EventFilter) error {
-	if event.With.ID == "" {
-		return ErrUnsetListenTask
+type ListenTaskType string
+
+const (
+	ListenTaskTypeUpdate ListenTaskType = "update"
+)
+
+func configureUpdateListener(ctx workflow.Context, event *model.EventFilter, data *Variables, onSuccess func()) error {
+	logger := workflow.GetLogger(ctx)
+
+	handler := func(ctx workflow.Context, args HTTPData) (*TaskListenResponse, error) {
+		// This is designed to give some debug information to the developer
+		resp := &TaskListenResponse{}
+
+		if statement, ok := event.With.Additional["if"]; ok {
+			// Parse a conditional - only accept the update if it resolves to "true"
+			conditional := MustParseVariables(statement.(string), data)
+
+			if conditional != "true" {
+				logger.Debug(
+					"Conditional event received and resolved to false",
+					"event", event.With.ID,
+					"conditional", conditional,
+					"statement", statement,
+				)
+				resp.Conditional = conditional
+				return resp, nil
+			}
+		}
+
+		onSuccess()
+
+		resp.EventComplete = true
+
+		return resp, nil
 	}
-	return nil
+
+	return workflow.SetUpdateHandlerWithOptions(ctx, event.With.ID, handler, workflow.UpdateHandlerOptions{
+		Validator: func(ctx workflow.Context, args HTTPData) error {
+			data.AddData(args)
+
+			if d, ok := event.With.Additional["if"]; ok {
+				if s, ok := d.(string); !ok {
+					return fmt.Errorf("if is not a string: %+v", d)
+				} else {
+					if _, err := ParseVariables(s, data); err != nil {
+						logger.Error("cannot parse data", "error", err)
+						return fmt.Errorf("cannot parse data: %w", err)
+					}
+				}
+			}
+
+			return nil
+		},
+	},
+	)
 }
 
 func listenConfigure(task *model.ListenTask, key string) (events []*model.EventFilter, isAll bool, err error) {
@@ -70,7 +121,7 @@ func listenConfigure(task *model.ListenTask, key string) (events []*model.EventF
 		err = fmt.Errorf("%w: listen.to.until", ErrUnsupportedTask)
 		return events, isAll, err
 	} else {
-		err = ErrUnsetListenTask
+		err = ErrUnsetListenIDTask
 		return events, isAll, err
 	}
 
@@ -95,61 +146,18 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 				isAllComplete = append(isAllComplete, false)
 			}
 
-			if err := workflow.SetUpdateHandlerWithOptions(
-				ctx,
-				event.With.ID,
-				func(ctx workflow.Context, args HTTPData) (*TaskListenResponse, error) {
-					// This is designed to give some debug information to the developer
-					resp := &TaskListenResponse{}
-
-					if statement, ok := event.With.Additional["if"]; ok {
-						// Parse a conditional - only accept the update if it resolves to "true"
-						conditional := MustParseVariables(statement.(string), data)
-
-						if conditional != "true" {
-							logger.Debug(
-								"Conditional event received and resolved to false",
-								"event", event.With.ID,
-								"conditional", conditional,
-								"statement", statement,
-							)
-							resp.Conditional = conditional
-							return resp, nil
-						}
-					}
-
+			if ListenTaskType(event.With.Type) == ListenTaskTypeUpdate {
+				if err := configureUpdateListener(ctx, event, data, func() {
 					logger.Debug("Listen event received", "event", event.With.ID)
 					if isAll {
 						isAllComplete[i] = true
 					} else {
 						isAnyComplete = true
 					}
-
-					resp.EventComplete = true
-
-					return resp, nil
-				},
-				workflow.UpdateHandlerOptions{
-					Validator: func(ctx workflow.Context, args HTTPData) error {
-						data.AddData(args)
-
-						if d, ok := event.With.Additional["if"]; ok {
-							if s, ok := d.(string); !ok {
-								return fmt.Errorf("if is not a string: %+v", d)
-							} else {
-								if _, err := ParseVariables(s, data); err != nil {
-									logger.Error("cannot parse data", "error", err)
-									return fmt.Errorf("cannot parse data: %w", err)
-								}
-							}
-						}
-
-						return nil
-					},
-				},
-			); err != nil {
-				logger.Error("Error setting update", "id", event.With.ID, "error", err)
-				return fmt.Errorf("error setting update: %w", err)
+				}); err != nil {
+					logger.Error("Error setting update", "id", event.With.ID, "error", err)
+					return fmt.Errorf("error setting update: %w", err)
+				}
 			}
 		}
 
@@ -176,4 +184,23 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 
 		return nil
 	}, nil
+}
+
+func validateEventFilter(event *model.EventFilter) error {
+	if event.With.ID == "" {
+		return ErrUnsetListenIDTask
+	}
+	if event.With.Type == "" {
+		return ErrUnsetListenTypeTask
+	}
+
+	validTaskTypes := []ListenTaskType{
+		ListenTaskTypeUpdate,
+	}
+
+	if !slices.Contains(validTaskTypes, ListenTaskType(event.With.Type)) {
+		return ErrUnknownListenTypeTask
+	}
+
+	return nil
 }
