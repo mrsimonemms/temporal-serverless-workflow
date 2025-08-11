@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"go.temporal.io/sdk/workflow"
 )
@@ -95,6 +96,7 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 	// Iterate over the task list to build out our workflow(s)
 	for _, item := range *tasks {
 		var task TemporalWorkflowFunc
+		var taskType string
 		var err error
 
 		// Check for duplicate keys
@@ -105,26 +107,37 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 
 		if fork := item.AsForkTask(); fork != nil {
 			task, err = forkTaskImpl(fork, item, w)
+			taskType = "ForkTask"
 		}
 
 		if http := item.AsCallHTTPTask(); http != nil {
 			task = httpTaskImpl(http, item.Key)
+			taskType = "CallHTTP"
 		}
 
 		if listen := item.AsListenTask(); listen != nil {
 			task, err = listenTaskImpl(listen, item.Key)
+			taskType = "ListenTask"
 		}
 
 		if set := item.AsSetTask(); set != nil {
 			task = setTaskImpl(set)
+			taskType = "SetTask"
 		}
 
 		if wait := item.AsWaitTask(); wait != nil {
 			task = waitTaskImpl(wait)
+			taskType = "WaitTask"
 		}
 
 		if err != nil {
 			return nil, err
+		}
+
+		if taskType != "" {
+			log.Debug().Str("key", item.Key).Str("type", taskType).Msg("Task detected")
+		} else {
+			log.Warn().Str("key", item.Key).Msg("Task detected, but no taskType set")
 		}
 
 		wf.Tasks = append(wf.Tasks, TemporalWorkflowTask{
