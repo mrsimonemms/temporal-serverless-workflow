@@ -17,20 +17,49 @@
 package workflow
 
 import (
+	"fmt"
+
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"go.temporal.io/sdk/workflow"
 )
+
+// Wrap all set values in a SideEffect to allow for generated values
+// to be safely used. This avoid non-deterministic errors, which are a
+// pain in the arse in Temporalland
+func setTaskValue(ctx workflow.Context, input string, data *Variables) (string, error) {
+	var str string
+	err := workflow.SideEffect(ctx, func(ctx workflow.Context) any {
+		return MustParseVariables(input, data)
+	}).Get(&str)
+	if err != nil {
+		return "", fmt.Errorf("unable to generate side effect value: %w", err)
+	}
+
+	return str, nil
+}
 
 func setTaskImpl(task *model.SetTask) TemporalWorkflowFunc {
 	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
 		logger := workflow.GetLogger(ctx)
 
 		for k, v := range task.Set {
-			if s, ok := v.(string); ok {
+			var err error
+
+			if rawStr, ok := v.(string); ok {
 				logger.Debug("Parsing value as string", "key", k)
-				v = MustParseVariables(s, data)
+				v, err = setTaskValue(ctx, rawStr, data)
+				if err != nil {
+					return err
+				}
 			}
-			data.Data[MustParseVariables(k, data)] = v
+
+			k, err = setTaskValue(ctx, k, data)
+			if err != nil {
+				return err
+			}
+
+			// Set the data
+			data.Data[k] = v
 		}
 
 		return nil
