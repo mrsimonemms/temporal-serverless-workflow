@@ -36,8 +36,45 @@ type TaskListenResponse struct {
 type ListenTaskType string
 
 const (
+	ListenTaskTypeQuery  ListenTaskType = "query"
 	ListenTaskTypeUpdate ListenTaskType = "update"
 )
+
+func configureQueryListener(ctx workflow.Context, event *model.EventFilter, data *Variables) error {
+	logger := workflow.GetLogger(ctx)
+
+	handler := func() (any, error) {
+		logger.Debug("Received query")
+
+		if d, ok := event.With.Additional["data"]; ok {
+			value, err := Interpolate(d, data)
+			if err != nil {
+				logger.Error("Error interpolating data", "error", err)
+				return nil, err
+			}
+
+			// Convert the output
+			if event.With.DataContentType == "application/json" {
+				logger.Debug("Converting query to Golang type")
+
+				// Convert YAML to Golang type
+				var err error
+				value, err = FromYAML(value)
+				if err != nil {
+					logger.Error("Cannot convert to Golang type - ensure query data is a string for interpolation", "error", err)
+					return nil, fmt.Errorf("ensure query data is a string for interpolation: %w", err)
+				}
+			}
+
+			return value, nil
+		}
+
+		// Return the parsed data
+		return data, nil
+	}
+
+	return workflow.SetQueryHandlerWithOptions(ctx, event.With.ID, handler, workflow.QueryHandlerOptions{})
+}
 
 func configureUpdateListener(ctx workflow.Context, event *model.EventFilter, data *Variables, onSuccess func()) error {
 	logger := workflow.GetLogger(ctx)
@@ -140,13 +177,21 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 
 		isAllComplete := make([]bool, 0)
 		isAnyComplete := false
+		await := false
 
 		for i, event := range events {
 			if isAll {
 				isAllComplete = append(isAllComplete, false)
 			}
 
-			if ListenTaskType(event.With.Type) == ListenTaskTypeUpdate {
+			switch ListenTaskType(event.With.Type) {
+			case ListenTaskTypeQuery:
+				if err := configureQueryListener(ctx, event, data); err != nil {
+					logger.Error("Error setting query", "id", event.With.ID, "error", err)
+					return fmt.Errorf("error setting query: %w", err)
+				}
+			case ListenTaskTypeUpdate:
+				await = true
 				if err := configureUpdateListener(ctx, event, data, func() {
 					logger.Debug("Listen event received", "event", event.With.ID)
 					if isAll {
@@ -164,22 +209,24 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 		// @todo(sje): figure out a way of customising the timeout
 		timeout := time.Hour
 
-		logger.Debug("Listening for updates", "timeout", timeout)
-		if ok, err := workflow.AwaitWithTimeout(ctx, timeout, func() bool {
-			// Calculate if the task if finished
-			if isAll {
-				logger.Debug("Waiting for listener(s) to complete", "complete", isAllComplete)
-				return SlicesEqual(isAllComplete, true)
-			} else {
-				logger.Debug("Waiting for listener to complete", "complete", isAnyComplete)
-				return isAnyComplete
+		if await {
+			logger.Debug("Listening for updates", "timeout", timeout)
+			if ok, err := workflow.AwaitWithTimeout(ctx, timeout, func() bool {
+				// Calculate if the task if finished
+				if isAll {
+					logger.Debug("Waiting for listener(s) to complete", "complete", isAllComplete)
+					return SlicesEqual(isAllComplete, true)
+				} else {
+					logger.Debug("Waiting for listener to complete", "complete", isAnyComplete)
+					return isAnyComplete
+				}
+			}); err != nil {
+				logger.Error("Error waiting", "error", err)
+				return fmt.Errorf("error waiting: %w", err)
+			} else if !ok {
+				logger.Warn("Await timeout")
+				return temporal.NewTimeoutError(*enums.TIMEOUT_TYPE_SCHEDULE_TO_START.Enum(), nil)
 			}
-		}); err != nil {
-			logger.Error("Error waiting", "error", err)
-			return fmt.Errorf("error waiting: %w", err)
-		} else if !ok {
-			logger.Warn("Await timeout")
-			return temporal.NewTimeoutError(*enums.TIMEOUT_TYPE_SCHEDULE_TO_START.Enum(), nil)
 		}
 
 		return nil
@@ -195,6 +242,7 @@ func validateEventFilter(event *model.EventFilter) error {
 	}
 
 	validTaskTypes := []ListenTaskType{
+		ListenTaskTypeQuery,
 		ListenTaskTypeUpdate,
 	}
 
