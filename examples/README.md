@@ -21,6 +21,7 @@ A collection of examples
 | [Conditionally Execute](./conditionally-execute/) | Allow tasks to only execute if they meet certain conditions |
 | [Multiple Workflows](./multiple-workflows/) | Configure multiple workflows |
 | [Listen](./listen/) | Configure listeners |
+| [Money Transfer](./money-transfer/) | Temporal's world-famous Money Transfer Demo, in Serverless Workflow form - uses Docker Compose |
 | [Query](./query/) | Configure query listener |
 | [Signal](./signal/) | Configure signal listener |
 
