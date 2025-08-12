@@ -70,10 +70,12 @@ var rootCmd = &cobra.Command{
 		connectionOpts := client.ConnectionOptions{}
 		if rootOpts.TemporalTLSEnabled {
 			// Use new to avoid a golint false positive
+			log.Debug().Msg("Enabling TLS connection")
 			connectionOpts.TLS = new(tls.Config)
 		}
 		var creds client.Credentials
 		if rootOpts.TemporalAPIKey != "" {
+			log.Debug().Msg("Using API key for authentcation")
 			creds = client.NewAPIKeyStaticCredentials(rootOpts.TemporalAPIKey)
 		}
 
