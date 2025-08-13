@@ -96,6 +96,7 @@ func setTaskInterpolate(ctx workflow.Context, keyID, input any, data *Variables)
 		outputValue, err = setTaskValue(ctx, v, data)
 	default:
 		logger.Debug("Maintaining JSON type", "key", keyID)
+		outputValue = v
 	}
 	if err != nil {
 		return outputValue, err
