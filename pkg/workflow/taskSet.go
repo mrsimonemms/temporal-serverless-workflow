@@ -18,6 +18,7 @@ package workflow
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"go.temporal.io/sdk/workflow"
@@ -27,39 +28,93 @@ import (
 // to be safely used. This avoid non-deterministic errors, which are a
 // pain in the arse in Temporalland
 func setTaskValue(ctx workflow.Context, input string, data *Variables) (string, error) {
+	logger := workflow.GetLogger(ctx)
 	var str string
 	err := workflow.SideEffect(ctx, func(ctx workflow.Context) any {
 		return MustParseVariables(input, data)
 	}).Get(&str)
 	if err != nil {
+		logger.Error("Unable to generate side effect value", "error", err)
 		return "", fmt.Errorf("unable to generate side effect value: %w", err)
 	}
 
 	return str, nil
 }
 
-func setTaskImpl(task *model.SetTask) TemporalWorkflowFunc {
-	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
-		logger := workflow.GetLogger(ctx)
+func setTaskInterpolate(ctx workflow.Context, keyID, input any, data *Variables) (outputValue any, err error) {
+	logger := workflow.GetLogger(ctx)
 
-		for k, v := range task.Set {
-			var err error
+	switch v := input.(type) {
+	case map[string]any:
+		logger.Debug("Parsing as JSON object", "key", keyID)
+		// Create a new object
+		obj := make(map[string]any)
 
-			if rawStr, ok := v.(string); ok {
-				logger.Debug("Parsing value as string", "key", k)
-				v, err = setTaskValue(ctx, rawStr, data)
-				if err != nil {
-					return err
-				}
+		// Iterate over each item
+		for i, item := range v {
+			// Interpolate the object key
+			var key any
+			var keyStr string
+			key, err = setTaskInterpolate(ctx, i, i, data)
+			if err != nil {
+				return outputValue, err
+			}
+			if k, ok := key.(string); ok {
+				keyStr = k
+			} else {
+				err = fmt.Errorf("%w: must be %s", ErrInvalidType, "string")
+				return outputValue, err
 			}
 
-			k, err = setTaskValue(ctx, k, data)
+			var o any
+			o, err = setTaskInterpolate(ctx, i, item, data)
+			if err != nil {
+				return outputValue, err
+			}
+
+			obj[keyStr] = o
+		}
+		outputValue = obj
+	case []any:
+		logger.Debug("Parsing as JSON array", "key", keyID)
+		// Create a new array
+		arr := make([]any, 0)
+
+		// Iterate over each item
+		for i, item := range v {
+			var o any
+			o, err = setTaskInterpolate(ctx, strconv.Itoa(i), item, data)
+			if err != nil {
+				return outputValue, err
+			}
+
+			arr = append(arr, o)
+		}
+		outputValue = arr
+	case string:
+		logger.Debug("Parsing as JSON string", "key", keyID)
+		outputValue, err = setTaskValue(ctx, v, data)
+	default:
+		logger.Debug("Maintaining JSON type", "key", keyID)
+	}
+	if err != nil {
+		return outputValue, err
+	}
+
+	return outputValue, err
+}
+
+func setTaskImpl(task *model.SetTask) TemporalWorkflowFunc {
+	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
+		for key, value := range task.Set {
+			var err error
+
+			value, err = setTaskInterpolate(ctx, key, value, data)
 			if err != nil {
 				return err
 			}
 
-			// Set the data
-			data.Data[k] = v
+			data.Data[key] = value
 		}
 
 		return nil
