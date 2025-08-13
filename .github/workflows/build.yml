@@ -95,7 +95,7 @@ jobs:
             IMG_NAME="${IMG_NAME},ghcr.io/${GITHUB_REPOSITORY,,}:${{ steps.branch-name.outputs.tag }}"
 
             echo "image_name=${IMG_NAME}" >> "$GITHUB_OUTPUT"
-            echo "platforms=linux/amd64,linux/arm64,linux/arm/v7" >> "$GITHUB_OUTPUT"
+            echo "platforms=linux/amd64,linux/arm64" >> "$GITHUB_OUTPUT"
             echo "push=true" >> "$GITHUB_OUTPUT"
           else
             # Use branch naming convention
