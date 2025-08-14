@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"slices"
 	"strings"
 	"time"
 
@@ -91,7 +90,6 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 		Tasks:     make([]TemporalWorkflowTask, 0),
 		Timeout:   timeout,
 	}
-	existingKeys := make([]string, 0)
 
 	// Iterate over the task list to build out our workflow(s)
 	for _, item := range *tasks {
@@ -99,12 +97,6 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 		var taskType string
 		var err error
 		var additionalWorkflows []*TemporalWorkflow
-
-		// Check for duplicate keys
-		if _, found := slices.BinarySearch(existingKeys, item.Key); found {
-			return nil, fmt.Errorf("%w: %s", ErrDuplicateKey, item.Key)
-		}
-		existingKeys = append(existingKeys, item.Key)
 
 		if http := item.AsCallHTTPTask(); http != nil {
 			task = httpTaskImpl(http, item.Key)
