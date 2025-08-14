@@ -30,7 +30,7 @@ import (
 
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"go.temporal.io/sdk/activity"
-	tmpl "go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -43,16 +43,47 @@ type CallHTTPResult struct {
 	URL        string         `json:"url"`
 }
 
+func parseCallBody(input json.RawMessage, data *Variables) ([]byte, error) {
+	// The input might be empty, a single or double-encoded piece of JSON.
+	if strings.TrimSpace(string(input)) != "" {
+		// It's not empty
+		if err := json.Unmarshal(input, &HTTPData{}); err != nil {
+			// It's not single-encoded
+			var i string
+			if err := json.Unmarshal(input, &i); err != nil {
+				// It's not double-encoded
+				return nil, fmt.Errorf("cannot parse input body: %w", err)
+			}
+			input = []byte(i)
+		}
+	}
+
+	d, err := input.MarshalJSON()
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling body: %w", err)
+	}
+	body, err := ParseVariables(string(d), data)
+	if err != nil {
+		return nil, fmt.Errorf("error interpolating body: %w", err)
+	}
+
+	return []byte(body), nil
+}
+
 func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, vars *Variables) (*CallHTTPResult, error) {
 	logger := activity.GetLogger(ctx)
 	logger.Debug("Running call HTTP activity")
 
-	body := bytes.NewBufferString(MustParseVariables(bytes.NewBuffer(callHttp.With.Body).String(), vars))
+	body, err := parseCallBody(callHttp.With.Body, vars)
+	if err != nil {
+		return nil, err
+	}
+
 	method := strings.ToUpper(MustParseVariables(callHttp.With.Method, vars))
 	url := MustParseVariables(callHttp.With.Endpoint.String(), vars)
 
 	logger.Debug("Making HTTP call", "method", method, "url", url)
-	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(body))
 	if err != nil {
 		logger.Error("Error making HTTP request", "method", method, "url", url, "error", err)
 		return nil, fmt.Errorf("error making http request: %w", err)
@@ -104,18 +135,23 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, var
 		// Error on our side - treat as non-retryable error as we need to fix it
 		logger.Error("CallHTTP returned 4xx error")
 
-		return nil, tmpl.NewNonRetryableApplicationError("CallHTTP returned 4xx error", string(CallHTTPErr), errors.New(resp.Status), HTTPData{
-			"status": resp.StatusCode,
-			"body":   bodyStr,
-			"json":   bodyJSON,
-		})
+		return nil, temporal.NewNonRetryableApplicationError(
+			"CallHTTP returned 4xx error",
+			string(CallHTTPErr),
+			errors.New(resp.Status),
+			HTTPData{
+				"status": resp.StatusCode,
+				"body":   bodyStr,
+				"json":   bodyJSON,
+			},
+		)
 	}
 
 	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 		// Error on their side - treat as retryable error as we can't fix it
 		logger.Error("CallHTTP returned 5xx error")
 
-		return nil, tmpl.NewApplicationError("CallHTTP returned 5xx error", string(CallHTTPErr), errors.New(resp.Status), HTTPData{
+		return nil, temporal.NewApplicationError("CallHTTP returned 5xx error", string(CallHTTPErr), errors.New(resp.Status), HTTPData{
 			"status": resp.StatusCode,
 			"body":   bodyStr,
 			"json":   bodyJSON,
