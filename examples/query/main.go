@@ -20,14 +20,16 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/mrsimonemms/golang-helpers/temporal"
 	"github.com/rs/zerolog/log"
 	"go.temporal.io/sdk/client"
 )
 
 type State struct {
-	Progress int    `json:"progressPercentage"`
-	Status   string `json:"status"`
+	ID       uuid.UUID `json:"id"`
+	Progress int       `json:"progressPercentage"`
+	Status   string    `json:"status"`
 }
 
 func main() {
@@ -66,11 +68,11 @@ func main() {
 					log.Fatal().Err(err).Msg("Error querying workflow")
 				}
 
-				var msg map[string]any
-				if err := res.Get(&msg); err != nil {
+				var state State
+				if err := res.Get(&state); err != nil {
 					log.Fatal().Err(err).Msg("Error getting query result")
 				}
-				log.Info().Interface("Query result", msg).Msg("Response from query")
+				log.Info().Interface("Query result", state).Msg("Response from query")
 
 				time.Sleep(time.Second * 2)
 			}

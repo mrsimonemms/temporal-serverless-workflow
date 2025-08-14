@@ -19,37 +19,34 @@ do:
               datacontenttype: application/json
               # The data returned from the query - for application/json, this must be a string so Go interpolation works correctly
               data: |
-                state:
-                  progressPercentage: {{ .state.progressPercentage }}
-                  status: {{ .state.status | default "not started" }}
+                id: {{ .id }}
+                progressPercentage: {{ .progressPercentage | default 0 }}
+                status: {{ .status | default "not started" }}
   - createState:
       set:
-        state:
-          progressPercentage: 0
+        # Items created at top-level are persisted
+        id: "{{ uuidv4 }}"
   - wait:
       wait:
         seconds: 5
   - updateState:
       set:
-        state:
-          progressPercentage: 33
-          status: running
+        progressPercentage: 33
+        status: running
   - wait:
       wait:
         seconds: 5
   - updateState:
       set:
-        state:
-          progressPercentage: 66
-          status: running
+        progressPercentage: 66
+        # status remains as "running" if it remains as top-level item
   - wait:
       wait:
         seconds: 5
   - stateComplete:
       set:
-        state:
-          progressPercentage: 100
-          status: finished
+        progressPercentage: 100
+        status: finished
   - wait:
       wait:
         seconds: 5
