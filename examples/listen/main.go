@@ -41,10 +41,8 @@ func main() {
 	}
 
 	ctx := context.Background()
-	we, err := c.ExecuteWorkflow(ctx, workflowOptions, "listen", workflow.Variables{
-		Data: workflow.HTTPData{
-			"userId": 3,
-		},
+	we, err := c.ExecuteWorkflow(ctx, workflowOptions, "listen", workflow.HTTPData{
+		"userId": 3,
 	})
 	if err != nil {
 		//nolint:gocritic

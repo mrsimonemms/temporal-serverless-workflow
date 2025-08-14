@@ -48,10 +48,8 @@ func main() {
 
 	for w, userId := range wfs {
 		ctx := context.Background()
-		we, err := c.ExecuteWorkflow(ctx, workflowOptions, w, workflow.Variables{
-			Data: map[string]any{
-				"userId": userId,
-			},
+		we, err := c.ExecuteWorkflow(ctx, workflowOptions, w, workflow.HTTPData{
+			"userId": userId,
 		})
 		if err != nil {
 			//nolint:gocritic

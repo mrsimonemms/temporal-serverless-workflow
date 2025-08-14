@@ -42,7 +42,7 @@ type TemporalWorkflow struct {
 	Tasks     []TemporalWorkflowTask
 }
 
-func (t *TemporalWorkflow) Workflow(ctx workflow.Context, input Variables) (map[string]OutputType, error) {
+func (t *TemporalWorkflow) Workflow(ctx workflow.Context, input HTTPData) (map[string]OutputType, error) {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("Running workflow")
 
@@ -54,7 +54,7 @@ func (t *TemporalWorkflow) Workflow(ctx workflow.Context, input Variables) (map[
 	vars := &Variables{
 		Data: make(map[string]any),
 	}
-	maps.Copy(vars.Data, input.Data)
+	maps.Copy(vars.Data, input)
 	output := map[string]OutputType{}
 
 	// Load in any envvars with the prefix
