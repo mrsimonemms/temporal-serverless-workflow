@@ -52,7 +52,7 @@ func (t *TemporalWorkflow) Workflow(ctx workflow.Context, input HTTPData) (map[s
 	})
 
 	vars := &Variables{
-		Data: make(map[string]any),
+		Data: GetWorkflowInfo(ctx),
 	}
 	maps.Copy(vars.Data, input)
 	output := map[string]OutputType{}

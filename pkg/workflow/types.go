@@ -54,6 +54,16 @@ func (a *Variables) AddData(d HTTPData) {
 	maps.Copy(a.Data, d)
 }
 
+func (a *Variables) Clone() *Variables {
+	if a.Data == nil {
+		a.Data = make(HTTPData)
+	}
+
+	return &Variables{
+		Data: maps.Clone(a.Data),
+	}
+}
+
 func (w *Workflow) Activities() *activities {
 	return &activities{}
 }

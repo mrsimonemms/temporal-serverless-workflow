@@ -74,6 +74,9 @@ func (a *activities) CallHTTP(ctx context.Context, callHttp *model.CallHTTP, var
 	logger := activity.GetLogger(ctx)
 	logger.Debug("Running call HTTP activity")
 
+	vars = vars.Clone()
+	vars.AddData(GetActivityVars(ctx))
+
 	body, err := parseCallBody(callHttp.With.Body, vars)
 	if err != nil {
 		return nil, err
