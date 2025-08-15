@@ -74,31 +74,47 @@ func (w *Workflow) WorkflowName() string {
 
 // Validation of the schema is handled separately. This validates that there is
 // nothing used we've not implemented. This should reduce over time.
+func validateTaskSupported(task *model.TaskItem) error {
+	if doTask := task.AsDoTask(); doTask != nil {
+		// Do task - iterate through these
+		for _, t := range *doTask.Do {
+			if err := validateTaskSupported(t); err != nil {
+				return err
+			}
+		}
+	}
+
+	if emit := task.AsEmitTask(); emit != nil {
+		return fmt.Errorf("%w: emit", ErrUnsupportedTask)
+	}
+	if forTask := task.AsForTask(); forTask != nil {
+		return fmt.Errorf("%w: for", ErrUnsupportedTask)
+	}
+	if grpc := task.AsCallGRPCTask(); grpc != nil {
+		return fmt.Errorf("%w: grpc", ErrUnsupportedTask)
+	}
+	if openapi := task.AsCallOpenAPITask(); openapi != nil {
+		return fmt.Errorf("%w: openapi", ErrUnsupportedTask)
+	}
+	if raise := task.AsRaiseTask(); raise != nil {
+		return fmt.Errorf("%w: raise", ErrUnsupportedTask)
+	}
+	if run := task.AsRunTask(); run != nil {
+		return fmt.Errorf("%w: run", ErrUnsupportedTask)
+	}
+	if switchTask := task.AsSwitchTask(); switchTask != nil {
+		return fmt.Errorf("%w: switch", ErrUnsupportedTask)
+	}
+	if try := task.AsTryTask(); try != nil {
+		return fmt.Errorf("%w: try", ErrUnsupportedTask)
+	}
+	return nil
+}
+
 func (w *Workflow) Validate() error {
 	for _, task := range *w.wf.Do {
-		if emit := task.AsEmitTask(); emit != nil {
-			return fmt.Errorf("%w: emit", ErrUnsupportedTask)
-		}
-		if forTask := task.AsForTask(); forTask != nil {
-			return fmt.Errorf("%w: for", ErrUnsupportedTask)
-		}
-		if grpc := task.AsCallGRPCTask(); grpc != nil {
-			return fmt.Errorf("%w: grpc", ErrUnsupportedTask)
-		}
-		if openapi := task.AsCallOpenAPITask(); openapi != nil {
-			return fmt.Errorf("%w: openapi", ErrUnsupportedTask)
-		}
-		if raise := task.AsRaiseTask(); raise != nil {
-			return fmt.Errorf("%w: raise", ErrUnsupportedTask)
-		}
-		if run := task.AsRunTask(); run != nil {
-			return fmt.Errorf("%w: run", ErrUnsupportedTask)
-		}
-		if switchTask := task.AsSwitchTask(); switchTask != nil {
-			return fmt.Errorf("%w: switch", ErrUnsupportedTask)
-		}
-		if try := task.AsTryTask(); try != nil {
-			return fmt.Errorf("%w: try", ErrUnsupportedTask)
+		if err := validateTaskSupported(task); err != nil {
+			return err
 		}
 	}
 
