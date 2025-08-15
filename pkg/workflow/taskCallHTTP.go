@@ -175,8 +175,13 @@ func httpTaskImpl(task *model.CallHTTP, key string) TemporalWorkflowFunc {
 	var a *activities
 
 	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
-		logger := workflow.GetLogger(ctx)
+		if toRun, err := CheckIfStatement(ctx, task.GetBase(), data); err != nil {
+			return err
+		} else if !toRun {
+			return nil
+		}
 
+		logger := workflow.GetLogger(ctx)
 		logger.Debug("Calling HTTP endpoint")
 
 		var result CallHTTPResult

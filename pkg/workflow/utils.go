@@ -19,14 +19,69 @@ package workflow
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/itchyny/gojq"
 	"github.com/serverlessworkflow/sdk-go/v3/model"
+	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
 	"gopkg.in/yaml.v3"
 )
+
+func CheckIfStatement(ctx workflow.Context, task *model.TaskBase, input *Variables) (toRun bool, err error) {
+	logger := workflow.GetLogger(ctx)
+	logger.Debug("Checking to see if task can be run")
+
+	if task.If != nil {
+		var query *gojq.Query
+
+		expression := model.SanitizeExpr(task.If.String())
+		query, err = gojq.Parse(expression)
+		if err != nil {
+			err = fmt.Errorf("unable to parse if statement as expression: %w", err)
+			logger.Error("Unable to parse if statement as expression", "error", err)
+			return toRun, err
+		}
+
+		// For some reason, GoJQ doesn't like HTTPData even though it's map[string]any 😕
+		data := make(map[string]any)
+		maps.Copy(data, input.Data)
+
+		iter := query.Run(data)
+		for {
+			v, ok := iter.Next()
+			if !ok {
+				break
+			}
+			if err, ok = v.(error); ok {
+				// Any JQ error will be considered a non-retryable error
+				logger.Error("Error parsing if statement in JQ", "error", err)
+				err = temporal.NewNonRetryableApplicationError("Error parsing if statement in JQ", string(IfStatementErr), err)
+				return toRun, err
+			}
+
+			switch r := v.(type) {
+			case bool:
+				toRun = r
+			case string:
+				// Can resolve "TRUE" or "1"
+				toRun = strings.EqualFold(r, "TRUE") || r == "1"
+			}
+
+			logger.Debug("Statement resolved", "toRun", toRun)
+		}
+	} else {
+		// No statement - continue with true
+		logger.Debug("No if statement found - continuing")
+		toRun = true
+	}
+
+	return toRun, err
+}
 
 func GenerateChildWorkflowName(prefix string, prefixes ...string) string {
 	prefixes = append([]string{prefix}, prefixes...)

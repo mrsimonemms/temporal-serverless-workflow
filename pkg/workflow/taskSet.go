@@ -107,6 +107,12 @@ func setTaskInterpolate(ctx workflow.Context, keyID, input any, data *Variables)
 
 func setTaskImpl(task *model.SetTask) TemporalWorkflowFunc {
 	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
+		if toRun, err := CheckIfStatement(ctx, task.GetBase(), data); err != nil {
+			return err
+		} else if !toRun {
+			return nil
+		}
+
 		for key, value := range task.Set {
 			var err error
 
