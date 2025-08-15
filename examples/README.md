@@ -22,6 +22,7 @@ A collection of examples
 | [Multiple Workflows](./multiple-workflows/) | Configure multiple workflows |
 | [Listen](./listen/) | Configure listeners |
 | [Query](./query/) | Configure query listener |
+| [Signal](./signal/) | Configure signal listener |
 
 ## Running
 
