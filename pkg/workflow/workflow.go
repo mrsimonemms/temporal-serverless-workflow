@@ -124,6 +124,11 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 			taskType = "SetTask"
 		}
 
+		if switchTask := item.AsSwitchTask(); switchTask != nil {
+			task = setSwitchImpl(switchTask)
+			taskType = "SwitchTask"
+		}
+
 		if wait := item.AsWaitTask(); wait != nil {
 			task = waitTaskImpl(wait)
 			taskType = "WaitTask"
