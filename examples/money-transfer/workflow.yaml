@@ -98,6 +98,7 @@
           if: '${ ._tw_workflow_type_name == "AccountTransferWorkflowHumanInLoop" }'
           set:
             stateProgressPercentage: 30
+            stateTransferState: waiting
       - requireApprovalListener:
           if: '${ ._tw_workflow_type_name == "AccountTransferWorkflowHumanInLoop" }'
           listen:
@@ -105,7 +106,7 @@
               one:
                 with:
                   # ID maps to the query name in Temporal
-                  id: approve
+                  id: approveTransfer
                   # Temporal signal - used to make write request
                   type: signal
                   # Timeout - runs forever if not sent
@@ -114,6 +115,8 @@
       - updateState:
           set:
             stateProgressPercentage: 50
+            # Set state to running - may have come from approveTransfer
+            stateTransferState: running
       - deposit: *deposit
       - updateState:
           set:
