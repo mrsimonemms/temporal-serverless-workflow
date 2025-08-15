@@ -23,9 +23,13 @@ import (
 )
 
 // A Do task configures a new workflow
-
-func doTaskImpl(do *model.DoTask, task *model.TaskItem, workflowInst *Workflow,
+func doTaskImpl(
+	do *model.DoTask,
+	task *model.TaskItem,
+	workflowInst *Workflow,
 ) ([]*TemporalWorkflow, error) {
+	// This doesn't implement the if statement as it
+	// doesn't make sense to conditionally register a workflow
 	temporalWorkflows, err := workflowInst.workflowBuilder(do.Do, task.Key)
 	if err != nil {
 		return nil, fmt.Errorf("error building additional do workflows: %w", err)

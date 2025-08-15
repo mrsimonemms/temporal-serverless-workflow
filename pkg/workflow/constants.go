@@ -24,7 +24,8 @@ type (
 )
 
 const (
-	CallHTTPErr ErrType = "CallHTTP error"
+	CallHTTPErr    ErrType = "CallHTTP error"
+	IfStatementErr ErrType = "IfStatement error"
 )
 
 const (

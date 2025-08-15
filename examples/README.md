@@ -18,6 +18,7 @@ A collection of examples
 | Name | Description |
 | --- | --- |
 | [Basic](./basic/) | A basic application to show the concepts |
+| [Conditionally Execute](./conditionally-execute/) | Allow tasks to only execute if they meet certain conditions |
 | [Multiple Workflows](./multiple-workflows/) | Configure multiple workflows |
 | [Listen](./listen/) | Configure listeners |
 | [Query](./query/) | Configure query listener |
