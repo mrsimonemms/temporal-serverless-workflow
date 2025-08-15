@@ -37,6 +37,7 @@ type ListenTaskType string
 
 const (
 	ListenTaskTypeQuery  ListenTaskType = "query"
+	ListenTaskTypeSignal ListenTaskType = "signal"
 	ListenTaskTypeUpdate ListenTaskType = "update"
 )
 
@@ -76,6 +77,36 @@ func configureQueryListener(ctx workflow.Context, event *model.EventFilter, data
 	return workflow.SetQueryHandlerWithOptions(ctx, event.With.ID, handler, workflow.QueryHandlerOptions{})
 }
 
+func configureSignalListener(ctx workflow.Context, event *model.EventFilter, _ *Variables) error {
+	logger := workflow.GetLogger(ctx)
+	logger.Debug("Creating signal", "signal", event.With.ID)
+
+	r := workflow.GetSignalChannel(ctx, event.With.ID)
+
+	// @todo(sje): allow data to be received via signal
+	// @todo(sje): ignore if timeout is set to 0 or "0"
+	if timeout, ok := event.With.Additional["timeout"]; ok {
+		logger.Debug("Adding timeout to signal receiver", "timeout", timeout)
+		t, err := time.ParseDuration(timeout.(string))
+		if err != nil {
+			logger.Error("Unable to parse duration: %w", err)
+			return fmt.Errorf("unable to parse duration: %w", err)
+		}
+
+		received, _ := r.ReceiveWithTimeout(ctx, t, nil)
+		if !received {
+			logger.Error("Signal not received within timeout")
+			return fmt.Errorf("signal not received within timeout")
+		}
+		return nil
+	}
+
+	logger.Debug("Listening for signal")
+	_ = r.Receive(ctx, nil)
+
+	return nil
+}
+
 func configureUpdateListener(ctx workflow.Context, event *model.EventFilter, data *Variables, onSuccess func()) error {
 	logger := workflow.GetLogger(ctx)
 
@@ -106,24 +137,25 @@ func configureUpdateListener(ctx workflow.Context, event *model.EventFilter, dat
 		return resp, nil
 	}
 
-	return workflow.SetUpdateHandlerWithOptions(ctx, event.With.ID, handler, workflow.UpdateHandlerOptions{
-		Validator: func(ctx workflow.Context, args HTTPData) error {
-			data.AddData(args)
+	return workflow.SetUpdateHandlerWithOptions(ctx, event.With.ID, handler,
+		workflow.UpdateHandlerOptions{
+			Validator: func(ctx workflow.Context, args HTTPData) error {
+				data.AddData(args)
 
-			if d, ok := event.With.Additional["if"]; ok {
-				if s, ok := d.(string); !ok {
-					return fmt.Errorf("if is not a string: %+v", d)
-				} else {
-					if _, err := ParseVariables(s, data); err != nil {
-						logger.Error("cannot parse data", "error", err)
-						return fmt.Errorf("cannot parse data: %w", err)
+				if d, ok := event.With.Additional["if"]; ok {
+					if s, ok := d.(string); !ok {
+						return fmt.Errorf("if is not a string: %+v", d)
+					} else {
+						if _, err := ParseVariables(s, data); err != nil {
+							logger.Error("cannot parse data", "error", err)
+							return fmt.Errorf("cannot parse data: %w", err)
+						}
 					}
 				}
-			}
 
-			return nil
+				return nil
+			},
 		},
-	},
 	)
 }
 
@@ -196,6 +228,11 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 					logger.Error("Error setting query", "id", event.With.ID, "error", err)
 					return fmt.Errorf("error setting query: %w", err)
 				}
+			case ListenTaskTypeSignal:
+				if err := configureSignalListener(ctx, event, data); err != nil {
+					logger.Error("Error setting signal", "id", event.With.ID, "error", err)
+					return fmt.Errorf("error setting signal: %w", err)
+				}
 			case ListenTaskTypeUpdate:
 				await = true
 				if err := configureUpdateListener(ctx, event, data, func() {
@@ -216,27 +253,37 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 		timeout := time.Hour
 
 		if await {
-			logger.Debug("Listening for updates", "timeout", timeout)
-			if ok, err := workflow.AwaitWithTimeout(ctx, timeout, func() bool {
-				// Calculate if the task if finished
-				if isAll {
-					logger.Debug("Waiting for listener(s) to complete", "complete", isAllComplete)
-					return SlicesEqual(isAllComplete, true)
-				} else {
-					logger.Debug("Waiting for listener to complete", "complete", isAnyComplete)
-					return isAnyComplete
-				}
-			}); err != nil {
-				logger.Error("Error waiting", "error", err)
-				return fmt.Errorf("error waiting: %w", err)
-			} else if !ok {
-				logger.Warn("Await timeout")
-				return temporal.NewTimeoutError(*enums.TIMEOUT_TYPE_SCHEDULE_TO_START.Enum(), nil)
+			if err := waitForListener(ctx, timeout, isAll, isAnyComplete, isAllComplete); err != nil {
+				return err
 			}
 		}
 
 		return nil
 	}, nil
+}
+
+func waitForListener(ctx workflow.Context, timeout time.Duration, isAll, isAnyComplete bool, isAllComplete []bool) error {
+	logger := workflow.GetLogger(ctx)
+	logger.Debug("Listening for updates", "timeout", timeout)
+
+	if ok, err := workflow.AwaitWithTimeout(ctx, timeout, func() bool {
+		// Calculate if the task if finished
+		if isAll {
+			logger.Debug("Waiting for listener(s) to complete", "complete", isAllComplete)
+			return SlicesEqual(isAllComplete, true)
+		} else {
+			logger.Debug("Waiting for listener to complete", "complete", isAnyComplete)
+			return isAnyComplete
+		}
+	}); err != nil {
+		logger.Error("Error waiting", "error", err)
+		return fmt.Errorf("error waiting: %w", err)
+	} else if !ok {
+		logger.Warn("Await timeout")
+		return temporal.NewTimeoutError(*enums.TIMEOUT_TYPE_SCHEDULE_TO_START.Enum(), nil)
+	}
+
+	return nil
 }
 
 func validateEventFilter(event *model.EventFilter) error {
@@ -249,6 +296,7 @@ func validateEventFilter(event *model.EventFilter) error {
 
 	validTaskTypes := []ListenTaskType{
 		ListenTaskTypeQuery,
+		ListenTaskTypeSignal,
 		ListenTaskTypeUpdate,
 	}
 
