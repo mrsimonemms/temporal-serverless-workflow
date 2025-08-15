@@ -28,14 +28,10 @@ import (
 	"github.com/itchyny/gojq"
 	"github.com/serverlessworkflow/sdk-go/v3/model"
 	"go.temporal.io/sdk/temporal"
-	"go.temporal.io/sdk/workflow"
 	"gopkg.in/yaml.v3"
 )
 
-func CheckIfStatement(ctx workflow.Context, task *model.TaskBase, input *Variables) (toRun bool, err error) {
-	logger := workflow.GetLogger(ctx)
-	logger.Debug("Checking to see if task can be run")
-
+func CheckIfStatement(task *model.TaskBase, input *Variables) (toRun bool, err error) {
 	if task.If != nil {
 		var query *gojq.Query
 
@@ -43,7 +39,6 @@ func CheckIfStatement(ctx workflow.Context, task *model.TaskBase, input *Variabl
 		query, err = gojq.Parse(expression)
 		if err != nil {
 			err = fmt.Errorf("unable to parse if statement as expression: %w", err)
-			logger.Error("Unable to parse if statement as expression", "error", err)
 			return toRun, err
 		}
 
@@ -59,7 +54,6 @@ func CheckIfStatement(ctx workflow.Context, task *model.TaskBase, input *Variabl
 			}
 			if err, ok = v.(error); ok {
 				// Any JQ error will be considered a non-retryable error
-				logger.Error("Error parsing if statement in JQ", "error", err)
 				err = temporal.NewNonRetryableApplicationError("Error parsing if statement in JQ", string(IfStatementErr), err)
 				return toRun, err
 			}
@@ -71,12 +65,9 @@ func CheckIfStatement(ctx workflow.Context, task *model.TaskBase, input *Variabl
 				// Can resolve "TRUE" or "1"
 				toRun = strings.EqualFold(r, "TRUE") || r == "1"
 			}
-
-			logger.Debug("Statement resolved", "toRun", toRun)
 		}
 	} else {
 		// No statement - continue with true
-		logger.Debug("No if statement found - continuing")
 		toRun = true
 	}
 

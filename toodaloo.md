@@ -8,4 +8,4 @@
 | [pkg/workflow/taskFork.go](pkg/workflow/taskFork.go#L32) | 32 | Simon Emms <simon@simonemms.com> | handle competing forks |
 | [pkg/workflow/taskListen.go](pkg/workflow/taskListen.go#L86) | 86 | Simon Emms <simon@simonemms.com> | allow data to be received via signal |
 | [pkg/workflow/taskListen.go](pkg/workflow/taskListen.go#L87) | 87 | Simon Emms <simon@simonemms.com> | ignore if timeout is set to 0 or "0" |
-| [pkg/workflow/taskListen.go](pkg/workflow/taskListen.go#L252) | 252 | Simon Emms <simon@simonemms.com> | figure out a way of customising the timeout |
+| [pkg/workflow/taskListen.go](pkg/workflow/taskListen.go#L246) | 246 | Simon Emms <simon@simonemms.com> | figure out a way of customising the timeout |

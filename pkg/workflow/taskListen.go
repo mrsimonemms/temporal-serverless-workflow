@@ -204,12 +204,6 @@ func listenTaskImpl(task *model.ListenTask, key string) (TemporalWorkflowFunc, e
 	}
 
 	return func(ctx workflow.Context, data *Variables, output map[string]OutputType) error {
-		if toRun, err := CheckIfStatement(ctx, task.GetBase(), data); err != nil {
-			return err
-		} else if !toRun {
-			return nil
-		}
-
 		logger := workflow.GetLogger(ctx)
 		logger.Debug("Registering listeners")
 

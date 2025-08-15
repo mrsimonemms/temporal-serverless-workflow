@@ -29,8 +29,9 @@ import (
 )
 
 type TemporalWorkflowTask struct {
-	Key  string
-	Task TemporalWorkflowFunc
+	Key      string
+	TaskBase *model.TaskBase
+	Task     TemporalWorkflowFunc
 }
 
 type TemporalWorkflowFunc func(ctx workflow.Context, data *Variables, output map[string]OutputType) error
@@ -66,8 +67,18 @@ func (t *TemporalWorkflow) Workflow(ctx workflow.Context, input HTTPData) (map[s
 	}
 
 	for _, task := range t.Tasks {
-		logger.Info("Running task", "name", task.Key)
+		logger.Debug("Check if task can be run", "name", task.Key)
 
+		// Check for and run any if statement
+		if toRun, err := CheckIfStatement(task.TaskBase, vars); err != nil {
+			logger.Error("Error checking if statement", "error", err)
+			return nil, err
+		} else if !toRun {
+			logger.Debug("Skipping task as if statement resolved as false", "name", task.Key)
+			continue
+		}
+
+		logger.Info("Running task", "name", task.Key)
 		if err := task.Task(ctx, vars, output); err != nil {
 			return nil, err
 		}
@@ -141,8 +152,9 @@ func (w *Workflow) workflowBuilder(tasks *model.TaskList, name string) ([]*Tempo
 
 		if task != nil {
 			wf.Tasks = append(wf.Tasks, TemporalWorkflowTask{
-				Key:  item.Key,
-				Task: task,
+				Key:      item.Key,
+				TaskBase: item.GetBase(),
+				Task:     task,
 			})
 		}
 	}
